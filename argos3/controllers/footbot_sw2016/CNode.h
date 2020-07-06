@@ -46,7 +46,7 @@ class CNode
 	
 	private:
 	
-		float normalisedBlackBoardValue(CBlackBoard* blackBoard, int index);
+		float percentageBlackBoardValue(CBlackBoard* blackBoard, int index);
 	
 		std::vector<CNode*> m_children;
 		nodetype m_type;

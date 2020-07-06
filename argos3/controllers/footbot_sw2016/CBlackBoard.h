@@ -1,6 +1,8 @@
 #ifndef CBLACKBOARD_H
 #define CBLACKBOARD_H
 
+#include <vector>
+#include <iostream>
 
 class CBlackBoard
 {
@@ -23,15 +25,18 @@ class CBlackBoard
 				
 		float getDensity() {return m_density;}
 		float getDensityChange() {return m_densityChange;}
-		void setDensity(float density);	
+		void updateDensityVector(float density);
+		void setDensity(bool first = false, int robotID = -1);
 		
 		float getDistNest() {return m_distNest;}
 		float getNestChange() {return m_distNestChange;}
-		void setDistNest(float distance);
+		void updateDistNestVector(float distance);
+		void setDistNest(bool first = false, int robotID = -1);
 		
-		float getFoodChange() {return m_distFoodChange;}
 		float getDistFood() {return m_distFood;}
-		void setDistFood(float distance);
+		float getFoodChange() {return m_distFoodChange;}
+		void updateDistFoodVector(float distance);
+		void setDistFood(bool first = false, int robotID = -1);
 		
 	private:
 	
@@ -42,12 +47,15 @@ class CBlackBoard
 		
 		float m_density;
 		float m_densityChange;
+		std::vector<float> m_densityVector;
 		
 		float m_distNest;
 		float m_distNestChange;
+		std::vector<float> m_distNestVector;
 		
 		float m_distFood;
 		float m_distFoodChange;
+		std::vector<float> m_distFoodVector;
 		
 		int m_numRobots;
 		

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 
 CFootBotSW2016::CFootBotSW2016() :
    m_pcWheels(NULL),
@@ -35,6 +36,11 @@ void CFootBotSW2016::Init(TConfigurationNode& t_node)
 	GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);	
 	GetNodeAttributeOrDefault(t_node, "trackingID", m_trackingID, m_trackingID);
 	m_food = 0;
+	
+	m_trackingIDs.push_back(m_trackingID);
+	
+	// sometimes it's handy to be able to highlight a particular robot
+	if (tracked()) m_pcLEDs->SetAllColors(CColor::YELLOW);
 }
 
 void CFootBotSW2016::buildTree(std::vector<std::string> tokens)
@@ -49,87 +55,132 @@ void CFootBotSW2016::createBlackBoard(int numRobots)
 
 void CFootBotSW2016::sensing() 
 {
+	bool inTrackingIDs = tracked();
+	std::string output;
+	
 	// read sensor data
 	const CCI_PositioningSensor::SReading& pos = m_pcPosition->GetReading();
 	const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();	
 	Real x = pos.Position.GetX();
 	Real y = pos.Position.GetY();
 	
-	// defaults for density of robots and distance to food or nest
-	std::vector<int> IDs;	
-	short int nestHops = 9;
-	short int foodHops = 9;
-	
 	// distance from the centre of the arena
 	double r = sqrt((x * x) + (y * y));
 	
-	// check if the robot is in the food region and update blackboard	
-	if (r >= 1)
-	{
-		foodHops = -1;
-		m_blackBoard->setDetectedFood(r);
-		m_pcLEDs->SetAllColors(CColor::GREEN);
+	// defaults for density of robots and distance to food or nest
+	std::vector<int> IDs;	
+	int density = 0;
+	float nestHops = (r < .5) ? -1000 : 9000;
+	float foodHops = (r < 1) ? 9000 : -1000;
+	
+	// update the blackboard to reflect whether the robot is in the food region
+	m_blackBoard->setDetectedFood(r >= 1);
+	
+	// update the blackboard to reflect whether the robot is in the nest region
+	if (r < .5 && m_blackBoard->getCarryingFood())
+	{		
+		m_food++;
+		m_blackBoard->setCarryingFood(false);
+		m_pcLEDs->SetAllColors(CColor::BLACK);
 	}
 	
-	// check if the robot is in the nest region and update blackboard
-	if (r < .5)
+	if (r >= 1)
 	{
-		nestHops = -1;
-		
-		if (m_blackBoard->getCarryingFood())
-		{		
-			m_food++;
-			m_blackBoard->setCarryingFood(false);
-			m_pcLEDs->SetAllColors(CColor::BLACK);
-		}
+		m_pcLEDs->SetAllColors(CColor::GREEN);
 	}
-	if (std::stoi(GetId()) == m_trackingID)  std::cout << std::to_string(nestHops) <<  " ";
 		
 	// for each range and bearing signal received 
 	for(size_t i = 0; i < tPackets.size(); ++i) {
 		
 		auto data = tPackets[i].Data;
 		
+		int id;
+		short int nest;
+		short int food;
+		data >> id;
+		data >> nest;
+		data >> food;
+				
 		// if we haven't already received a signal from this robot in the current timestep	
-		if (std::find(IDs.begin(), IDs.end(), tPackets[i].Data[3]) == IDs.end()) {
+		if (std::find(IDs.begin(), IDs.end(), id) == IDs.end()) {
 			
+			if (inTrackingIDs) output += std::to_string(id) + " ";
+		
 			// if the other robot is within range
-			if (tPackets[i].Range < 25) {
+			if (tPackets[i].Range < 35) {
+				
+				if (inTrackingIDs) output += std::to_string(food) + " | ";
 				
 				// save nest hops value if lower than the one currently stored
-				if (data[5] < nestHops) {
-					nestHops = data[5];
+				if (nest < nestHops) {
+					nestHops = nest;
 				}
 				
 				// save food hops value if lower than the one currently stored
-				if (data[7] < foodHops) {
-					foodHops = data[7];
+				if (food < foodHops) {
+					foodHops = food;
 				}
-		
-				// save this robot's ID
-				IDs.push_back(tPackets[i].Data[3]);
+				
+				density++;
 			}
+			else
+			{
+				if (inTrackingIDs) output += "x | ";
+			}
+		
+			// save this robot's ID
+			IDs.push_back(id);
+		}
+		else
+		{
+			if (inTrackingIDs) output += "d | ";
 		}
 	}
 	
 	// increment nest and food hops
-	nestHops++;
-	foodHops++;
+	nestHops += 1000;
+	foodHops += 1000;
 	
-	// save density and distance values
-	m_blackBoard->setDensity(IDs.size());
-	m_blackBoard->setDistNest(nestHops);
-	m_blackBoard->setDistFood(foodHops);
+	if (inTrackingIDs) output += std::to_string(foodHops);	
+	if (inTrackingIDs) std::cout << GetId() << " : " << output <<std::endl;
+	
+	// save density and change in density
+	m_blackBoard->updateDensityVector(density);
+	if (m_count == 2 || m_count % 4 == 0)
+	{
+		//m_blackBoard->setDensity((m_count == 2), (inTrackingIDs ? std::stoi(GetId()) : -1));
+		m_blackBoard->setDensity((m_count == 2), -1);
+	}
+	
+	// save distance to nest and change in distance
+	m_blackBoard->updateDistNestVector(nestHops);
+	if (m_count == 2 || m_count % 4 == 0)
+	{
+		//m_blackBoard->setDistNest((m_count == 2), (inTrackingIDs ? std::stoi(GetId()) : -1));
+		m_blackBoard->setDistNest((m_count == 2), -1);
+	}
+	
+	// save distance to food and change in distance
+	m_blackBoard->updateDistFoodVector(foodHops);
+	if (m_count == 2 || m_count % 4 == 0)
+	{
+		m_blackBoard->setDistFood((m_count == 2), (inTrackingIDs ? std::stoi(GetId()) : -1));
+		if (inTrackingIDs) std::cout << m_blackBoard->getDistFood() << std::endl;
+	}
 }
 
 void CFootBotSW2016::actuation() 
 {
+	short int distNest = m_blackBoard->getDistNest() * 10000;
+	short int distFood = m_blackBoard->getDistFood() * 10000;
+	if (tracked()) std::cout << GetId() << " RAB signal: " << distFood << std::endl;
+	
 	// write robot ID, distance to nest and distance to food to buffer,
 	// plus an arbitrary value to use remaining bytes
 	CByteArray cBuf;	
 	cBuf << std::stoi(GetId());
-	cBuf << (short int) (m_blackBoard->getDistNest() * 10);
-	cBuf << (short int) (m_blackBoard->getDistFood() * 10);
+	cBuf << distNest;
+	cBuf << distFood;
 	cBuf << (short int) (0);
 	
 	// send range and bearing signal
@@ -153,31 +204,40 @@ void CFootBotSW2016::ControlStep()
 		// fill buffer
 		CByteArray cBuf;
 		cBuf << std::stoi(GetId());
-		cBuf << (short int) 11;
-		cBuf << (short int) 11;
+		cBuf << (short int) 10000;
+		cBuf << (short int) 10000;
 		cBuf << (short int) 0;
 		
 		// send signal
 		m_pcRABA->ClearData();
 		m_pcRABA->SetData(cBuf);
-		
-		// sometimes it's handy to be able toighlight a particular robot
-		if (std::stoi(GetId()) == m_trackingID) m_pcLEDs->SetAllColors(CColor::YELLOW);
 	}
-	
-	if (m_count % 5 == 0)
+	else
 	{
 		sensing();
-		
+	}
+	
+	if (m_count % 4 == 0)
+	{
 		m_blackBoard->setMotors(0);
 		std::string output;
 		std::string result = m_rootNode->evaluate(m_blackBoard, output);
 		
 		// uncomment to print all nodes traversed on each tick
-		// if (std::stoi(GetId()) == m_trackingID) std::cout << output << std::endl;
+		if (tracked()) std::cout << output << std::endl;
+	}
 		
+	if (m_count > 1)
+	{
 		actuation();
 	}
+	
+	if (tracked()) std::cout << std::endl;
+}
+
+bool CFootBotSW2016::tracked()
+{
+	return (std::find(m_trackingIDs.begin(), m_trackingIDs.end(), std::stoi(GetId())) != m_trackingIDs.end());
 }
 
 REGISTER_CONTROLLER(CFootBotSW2016, "footbot_sw2016_controller")

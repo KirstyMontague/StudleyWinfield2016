@@ -333,8 +333,8 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifltvar:
 		{
-			float value1 = normalisedBlackBoardValue(blackBoard, m_children[0]->getData());
-			float value2 = normalisedBlackBoardValue(blackBoard, m_children[1]->getData());
+			float value1 = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value2 = percentageBlackBoardValue(blackBoard, m_children[1]->getData());
 			
 			std::string result = (value1 < value2) ? "success" : "failure";
 			output += std::to_string(value1) + " lt " + std::to_string(value2) + " " + result + " ";
@@ -343,8 +343,8 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifgevar:
 		{
-			float value1 = normalisedBlackBoardValue(blackBoard, m_children[0]->getData());
-			float value2 = normalisedBlackBoardValue(blackBoard, m_children[1]->getData());
+			float value1 = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value2 = percentageBlackBoardValue(blackBoard, m_children[1]->getData());
 			
 			std::string result = (value1 >= value2) ? "success" : "failure";
 			output += std::to_string(value1) + " gte " + std::to_string(value2) + " " + result + " ";
@@ -354,7 +354,7 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		case CNode::nodetype::ifltcon:
 		{
 			int index = m_children[0]->getData();
-			float value = normalisedBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
 			float data = m_children[1]->getData();
 			
 			std::string result = (value < data) ? "success" : "failure";
@@ -365,7 +365,7 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		case CNode::nodetype::ifgecon:
 		{
 			int index = m_children[0]->getData();
-			float value = normalisedBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
 			float data = m_children[1]->getData();
 			
 			std::string result = (value >= data) ? "success" : "failure";
@@ -392,7 +392,7 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 	return 0;
 }
 
-float CNode::normalisedBlackBoardValue(CBlackBoard* blackBoard, int index)
+float CNode::percentageBlackBoardValue(CBlackBoard* blackBoard, int index)
 {
 	if (index == 0) { // boolean
 		return (!blackBoard->getDetectedFood()) ? 0 : 100;
@@ -406,15 +406,21 @@ float CNode::normalisedBlackBoardValue(CBlackBoard* blackBoard, int index)
 		return blackBoard->getDensity() * 100;
 	}
 	
-	if (index == 3) { // values between -1 and 1
-		return (blackBoard->getDensityChange() * 50) + 50;
+	if (index == 3) { // values between -4/7 and 4/7
+		float change = (blackBoard->getDensityChange() / 4) * 7; // convert to a value between -1 and 1
+		change = (change * 50) + 50; // convert to a value between 0 and 100
+		return change;
 	}
 	
-	if (index == 4) { // values between -1 and 1
-		return (blackBoard->getDistNest() * 50) + 50;
+	if (index == 4) { // values between -4/7 and 4/7
+		float change = (blackBoard->getNestChange() / 4) * 7; // convert to a value between -1 and 1
+		change = (change * 50) + 50; // convert to a value between 0 and 100
+		return change;
 	}
 	
-	if (index == 5) { // values between -1 and 1
-		return (blackBoard->getDistFood() * 50) + 50;
+	if (index == 5) { // values between -4/7 and 4/7
+		float change = (blackBoard->getFoodChange() / 4) * 7; // convert to a value between -1 and 1
+		change = (change * 50) + 50; // convert to a value between 0 and 100
+		return change;
 	}	
 }

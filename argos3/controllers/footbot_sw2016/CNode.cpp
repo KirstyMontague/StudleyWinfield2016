@@ -11,7 +11,7 @@ CNode::CNode(std::string word)
 	m_data = std::stoi(word);
 }
 
-CNode::CNode(std::vector<std::string>& chromosome)
+CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 {
 	if (chromosome.size() > 0)
 	{
@@ -258,14 +258,33 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		case CNode::nodetype::seqm3:
 		case CNode::nodetype::seqm4:
 		{
-			output += "seqm" + std::to_string(m_children.size()) + " ";
-			for (auto child : m_children)
+			output += "seqm" + std::to_string(m_children.size()) + "(" + std::to_string(m_ptr) + ") ";
+		
+			int count = 0;
+			
+			while (count < m_children.size())
 			{
-				if (child->evaluate(blackBoard, output) == "failure")
+				count++;
+				
+				std::string result = m_children[m_ptr]->evaluate(blackBoard, output);
+			
+				if (result == "failure")
 				{
+					m_ptr = 0;
 					return "failure";
 				}
-			}			
+				
+				else if (result == "running")
+				{
+					return "running";
+				}
+				
+				else
+				{
+					m_ptr = (m_ptr + 1) % m_children.size();
+				}
+			}
+			
 			return "success";
 		}
 		
@@ -273,14 +292,33 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		case CNode::nodetype::selm3:
 		case CNode::nodetype::selm4:
 		{
-			output += "selm" + std::to_string(m_children.size()) + " ";
-			for (auto child : m_children)
+			output += "selm" + std::to_string(m_children.size()) + "(" + std::to_string(m_ptr) + ") ";
+			
+			int count = 0;
+			
+			while (count < m_children.size())
 			{
-				if (child->evaluate(blackBoard, output) == "success")
+				count++;
+				
+				std::string result = m_children[m_ptr]->evaluate(blackBoard, output);
+			
+				if (result == "success")
 				{
+					m_ptr = 0;
 					return "success";
 				}
-			}			
+				
+				else if (result == "running")
+				{
+					return "running";
+				}
+				
+				else
+				{
+					m_ptr = (m_ptr + 1) % m_children.size();
+				}
+			}
+			
 			return "failure";
 		}
 		
@@ -300,35 +338,70 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::successd:
 		{
-			m_children[0]->evaluate (blackBoard, output);
-			return "success";
+			output += "successd ";
+			std::string result = m_children[0]->evaluate (blackBoard, output);
+			return (result == "failure") ? "success" : result;
 		}
 		
 		case CNode::nodetype::failured:
 		{
-			m_children[0]->evaluate (blackBoard, output);
-			return "failure";
+			output += "failured ";
+			std::string result = m_children[0]->evaluate (blackBoard, output);
+			return (result == "success") ? "failure" : result;
 		}
 		
 		case CNode::nodetype::mf:
 		{
-			output += "mf ";
-			blackBoard->setMotors(3);
-			return "success";
+			output += "mf("+ std::to_string(m_ptr) + ") ";
+			
+			if (m_ptr == 0)
+			{
+				blackBoard->setMotors(3);
+				m_ptr++;
+				return "running";
+			}
+			
+			else
+			{
+				m_ptr--;
+				return "success";
+			}
 		}
 		
 		case CNode::nodetype::ml:
 		{
-			output += "ml ";
-			blackBoard->setMotors(1);
-			return "success";
+			output += "ml("+ std::to_string(m_ptr) + ") ";
+			
+			if (m_ptr == 0)
+			{
+				blackBoard->setMotors(1);
+				m_ptr++;
+				return "running";
+			}
+			
+			else
+			{
+				m_ptr--;
+				return "success";
+			}
 		}
 		
 		case CNode::nodetype::mr:
 		{
-			output += "mr ";
-			blackBoard->setMotors(2);
-			return "success";
+			output += "mr("+ std::to_string(m_ptr) + ") ";
+			
+			if (m_ptr == 0)
+			{
+				blackBoard->setMotors(2);
+				m_ptr++;
+				return "running";
+			}
+			
+			else
+			{
+				m_ptr--;
+				return "success";
+			}
 		}
 		
 		case CNode::nodetype::ifltvar:

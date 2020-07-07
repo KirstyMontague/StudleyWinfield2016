@@ -14,8 +14,9 @@ CFootBotSW2016::CFootBotSW2016() :
    m_pcRABA(NULL),
    m_pcRABS(NULL),
    m_fWheelVelocity(5.0f),
-   m_trackingID(0) {
-	m_count = 0;			   
+   m_trackingID(0),
+   m_count(0),
+   m_food(0) {
 }
 
 CFootBotSW2016::~CFootBotSW2016()
@@ -35,12 +36,12 @@ void CFootBotSW2016::Init(TConfigurationNode& t_node)
 
 	GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);	
 	GetNodeAttributeOrDefault(t_node, "trackingID", m_trackingID, m_trackingID);
-	m_food = 0;
+	GetNodeAttributeOrDefault(t_node, "verbose", m_verbose, m_verbose);
 	
 	m_trackingIDs.push_back(m_trackingID);
 	
 	// sometimes it's handy to be able to highlight a particular robot
-	if (tracked()) m_pcLEDs->SetAllColors(CColor::YELLOW);
+	if (inTrackingIDs() && m_verbose) m_pcLEDs->SetAllColors(CColor::YELLOW);
 }
 
 void CFootBotSW2016::buildTree(std::vector<std::string> tokens)
@@ -55,7 +56,7 @@ void CFootBotSW2016::createBlackBoard(int numRobots)
 
 void CFootBotSW2016::sensing() 
 {
-	bool inTrackingIDs = tracked();
+	bool tracking = inTrackingIDs() && m_verbose;
 	std::string output;
 	
 	// read sensor data
@@ -104,12 +105,12 @@ void CFootBotSW2016::sensing()
 		// if we haven't already received a signal from this robot in the current timestep	
 		if (std::find(IDs.begin(), IDs.end(), id) == IDs.end()) {
 			
-			if (inTrackingIDs) output += std::to_string(id) + " ";
+			if (tracking) output += std::to_string(id) + " ";
 		
 			// if the other robot is within range
 			if (tPackets[i].Range < 35) {
 				
-				if (inTrackingIDs) output += std::to_string(food) + " | ";
+				if (tracking) output += std::to_string(food) + " | ";
 				
 				// save nest hops value if lower than the one currently stored
 				if (nest < nestHops) {
@@ -125,7 +126,7 @@ void CFootBotSW2016::sensing()
 			}
 			else
 			{
-				if (inTrackingIDs) output += "x | ";
+				if (tracking) output += "x | ";
 			}
 		
 			// save this robot's ID
@@ -133,7 +134,7 @@ void CFootBotSW2016::sensing()
 		}
 		else
 		{
-			if (inTrackingIDs) output += "d | ";
+			if (tracking) output += "d | ";
 		}
 	}
 	
@@ -141,31 +142,28 @@ void CFootBotSW2016::sensing()
 	nestHops += 1000;
 	foodHops += 1000;
 	
-	if (inTrackingIDs) output += std::to_string(foodHops);	
-	if (inTrackingIDs) std::cout << GetId() << " : " << output <<std::endl;
+	if (tracking) output += std::to_string(foodHops);	
+	if (tracking) std::cout << GetId() << " : " << output <<std::endl;
 	
 	// save density and change in density
 	m_blackBoard->updateDensityVector(density);
 	if (m_count == 2 || m_count % 4 == 0)
 	{
-		//m_blackBoard->setDensity((m_count == 2), (inTrackingIDs ? std::stoi(GetId()) : -1));
-		m_blackBoard->setDensity((m_count == 2), -1);
+		m_blackBoard->setDensity((m_count == 2), (tracking ? std::stoi(GetId()) : -1));
 	}
 	
 	// save distance to nest and change in distance
 	m_blackBoard->updateDistNestVector(nestHops);
 	if (m_count == 2 || m_count % 4 == 0)
 	{
-		//m_blackBoard->setDistNest((m_count == 2), (inTrackingIDs ? std::stoi(GetId()) : -1));
-		m_blackBoard->setDistNest((m_count == 2), -1);
+		m_blackBoard->setDistNest((m_count == 2), (tracking ? std::stoi(GetId()) : -1));
 	}
 	
 	// save distance to food and change in distance
 	m_blackBoard->updateDistFoodVector(foodHops);
 	if (m_count == 2 || m_count % 4 == 0)
 	{
-		m_blackBoard->setDistFood((m_count == 2), (inTrackingIDs ? std::stoi(GetId()) : -1));
-		if (inTrackingIDs) std::cout << m_blackBoard->getDistFood() << std::endl;
+		m_blackBoard->setDistFood((m_count == 2), (tracking ? std::stoi(GetId()) : -1));
 	}
 }
 
@@ -173,7 +171,7 @@ void CFootBotSW2016::actuation()
 {
 	short int distNest = m_blackBoard->getDistNest() * 10000;
 	short int distFood = m_blackBoard->getDistFood() * 10000;
-	if (tracked()) std::cout << GetId() << " RAB signal: " << distFood << std::endl;
+	if (inTrackingIDs() && m_verbose) std::cout << GetId() << " RAB signal: " << distFood << std::endl;
 	
 	// write robot ID, distance to nest and distance to food to buffer,
 	// plus an arbitrary value to use remaining bytes
@@ -224,7 +222,7 @@ void CFootBotSW2016::ControlStep()
 		std::string result = m_rootNode->evaluate(m_blackBoard, output);
 		
 		// uncomment to print all nodes traversed on each tick
-		if (tracked()) std::cout << output << std::endl;
+		if (inTrackingIDs()) std::cout << output << std::endl;
 	}
 		
 	if (m_count > 1)
@@ -232,7 +230,7 @@ void CFootBotSW2016::ControlStep()
 		actuation();
 	}
 	
-	if (tracked()) std::cout << std::endl;
+	if (inTrackingIDs() && m_verbose) std::cout << std::endl;
 }
 
 bool CFootBotSW2016::tracked()

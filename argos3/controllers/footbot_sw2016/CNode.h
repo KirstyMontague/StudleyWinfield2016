@@ -47,7 +47,7 @@ class CNode
 	private:
 	
 		float percentageBlackBoardValue(CBlackBoard* blackBoard, int index);
-	
+		int m_ptr;
 		std::vector<CNode*> m_children;
 		nodetype m_type;
 		int m_data;

@@ -46,9 +46,11 @@ private:
 	int m_food;
 	int m_trackingID;
 	std::vector<int> m_trackingIDs;
-   Real m_fWheelVelocity;
+	bool m_verbose;
+
+	Real m_fWheelVelocity;
    
-   bool tracked();
+   bool inTrackingIDs();
    
    // sensors / actuators
    

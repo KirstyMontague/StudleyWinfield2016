@@ -21,7 +21,7 @@
         <positioning implementation="default" />
         <range_and_bearing implementation="medium" medium="rab" />
       </sensors>
-      <params />
+      <params trackingID="-1" velocity="5" verbose="false"/>
     </footbot_sw2016_controller>
   </controllers>
   

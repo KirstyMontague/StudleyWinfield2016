@@ -17,7 +17,7 @@ from deap import gp
 
 # EA parameters
 
-deapSeed = 12
+deapSeed = 14
 sqrtRobots = 3
 iterations = 2
 populationSize = 15
@@ -52,7 +52,7 @@ def nodeSettings():
 	pSettings['probm2'] = True
 	pSettings['probm3'] = True
 	pSettings['probm4'] = True
-	# pSettings['repeatd'] = True
+	pSettings['repeat'] = True
 	pSettings['successd'] = True
 	pSettings['failured'] = True
 	pSettings['ifltvar'] = True
@@ -70,7 +70,7 @@ def nodeSettings():
 def addNodes():
 	
 	# add the nodes chosen in nodeSettings() and dependencies if they have any
-		
+	
 	if (pSettings['ifltvar']): pset.addPrimitive(robot.ifltvar, [bbInput, bbInput], str)
 	if (pSettings['ifltcon']): pset.addPrimitive(robot.ifltcon, [bbInput, constant], str)
 	if (pSettings['ifgevar']): pset.addPrimitive(robot.ifgevar, [bbInput, bbInput], str)
@@ -96,6 +96,11 @@ def addNodes():
 	if (pSettings['selm4']): pset.addPrimitive(robot.selm4, [str, str, str, str],  str)
 	if (pSettings['seqm4']): pset.addPrimitive(robot.seqm4, [str, str, str, str],  str)
 	if (pSettings['probm4']): pset.addPrimitive(robot.probm4, [str, str, str, str],  str)
+
+	if (pSettings['repeat']):
+		pset.addPrimitive(robot.repeat, [repetitions, str],  str)
+		pset.addPrimitive(robot.repetitions, [repetitions], repetitions)
+		pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitions)
 
 	if (pSettings['successd']): pset.addPrimitive(robot.successd, [str],  str)
 	if (pSettings['failured']): pset.addPrimitive(robot.failured, [str],  str)
@@ -332,7 +337,6 @@ def eaLoop(logbook, population, toolbox, ngen, stats=None, halloffame=None, verb
 	# save parameters and best chromosome to file if we haven't already
 	if (gen % 10 != 0):
 		saveBest(gen, toolbox.select(population, len(population)))
-			
 
 
 def evaluateRobot(individual):
@@ -405,13 +409,16 @@ class robotObject(object):
 	def ifgecon(): print ""
 	def successl(): print ""
 	def failurel(): print ""
+	def repeat(): print ""
 	def successd(): print ""
 	def failured(): print ""
 	def bb(): print ""
 	def rand(): print ""
+	def repetitions(): print ""
 
 class bbInput(): x = 1	
 class constant(): x = 1
+class repetitions(): x = 1
 
 
 robot = robotObject()

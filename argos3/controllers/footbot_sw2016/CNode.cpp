@@ -55,6 +55,11 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				word = chromosome.at(0);
 			}
 
+			if (word == "repetitions") {
+				token = 24;
+				chromosome.erase(chromosome.begin());
+				word = chromosome.at(0);
+			}
 		}
 		
 		chromosome.erase(chromosome.begin());
@@ -124,7 +129,20 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				m_children.push_back(new CNode(chromosome));
 				break;
 			}
-			case 9: { // not implemented
+			case 9: {
+				
+				m_type = nodetype::repeat;
+				
+				while (chromosome.at(0) == "repetitions") {
+					chromosome.erase(chromosome.begin());
+				}
+				m_children.push_back(new CNode(chromosome.at(0)));
+				chromosome.erase(chromosome.begin());
+				
+				m_children.push_back(new CNode(chromosome));
+				
+				break;
+				
 				m_type = nodetype::repeat;
 				m_children.push_back(new CNode(chromosome));
 				break;
@@ -243,6 +261,10 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				m_data = std::stoi(word); // blackboard index
 				break;
 			}
+			case 24: {
+				m_data = std::stoi(word); // repetitions
+				break;
+			}
 			default: {
 				std::cout << "node error" << std::endl;
 			}
@@ -332,8 +354,22 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::repeat:
 		{
-			// not implemented
-			return m_children[0]->evaluate (blackBoard, output);
+			output += "repeat" + std::to_string(m_children[0]->getData()) + " ";
+			
+			float iterations = m_children[0]->getData();
+			int count = 0;
+			
+			while (count < iterations)
+			{
+				count++;
+				std::string result = m_children[1]->evaluate(blackBoard, output);
+				if (result != "success")
+				{
+					return result;
+				}
+			}
+			
+			return "success";
 		}
 		
 		case CNode::nodetype::successd:

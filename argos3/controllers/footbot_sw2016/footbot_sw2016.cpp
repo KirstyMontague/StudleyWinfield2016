@@ -233,7 +233,7 @@ void CFootBotSW2016::ControlStep()
 	if (inTrackingIDs() && m_verbose) std::cout << std::endl;
 }
 
-bool CFootBotSW2016::tracked()
+bool CFootBotSW2016::inTrackingIDs()
 {
 	return (std::find(m_trackingIDs.begin(), m_trackingIDs.end(), std::stoi(GetId())) != m_trackingIDs.end());
 }

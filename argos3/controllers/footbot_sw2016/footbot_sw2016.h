@@ -33,9 +33,9 @@ public:
 private:
 
 	void stop() {m_pcWheels->SetLinearVelocity(0.0f, 0.0f);}
-	void goStraight() {m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);}
-	void turnLeft() {m_pcWheels->SetLinearVelocity(0.0f, m_fWheelVelocity);}
-	void turnRight() {m_pcWheels->SetLinearVelocity(m_fWheelVelocity, 0.0f);}
+	void goStraight() {m_pcWheels->SetLinearVelocity(m_lWheelVelocity, m_rWheelVelocity);}
+	void turnLeft() {m_pcWheels->SetLinearVelocity(0.0f, m_rWheelVelocity);}
+	void turnRight() {m_pcWheels->SetLinearVelocity(m_lWheelVelocity, 0.0f);}
 
 	void sensing();
 	void actuation();
@@ -48,7 +48,8 @@ private:
 	std::vector<int> m_trackingIDs;
 	bool m_verbose;
 
-	Real m_fWheelVelocity;
+	Real m_rWheelVelocity;
+	Real m_lWheelVelocity;
    
    bool inTrackingIDs();
    

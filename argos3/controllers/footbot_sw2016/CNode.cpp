@@ -112,6 +112,7 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				m_type = nodetype::probm2;
 				m_children.push_back(new CNode(chromosome));
 				m_children.push_back(new CNode(chromosome));
+				m_ptr = std::rand() % m_children.size();
 				break;
 			}
 			case 7: {
@@ -119,6 +120,7 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				m_children.push_back(new CNode(chromosome));
 				m_children.push_back(new CNode(chromosome));
 				m_children.push_back(new CNode(chromosome));
+				m_ptr = std::rand() % m_children.size();
 				break;
 			}
 			case 8: {
@@ -127,6 +129,7 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				m_children.push_back(new CNode(chromosome));
 				m_children.push_back(new CNode(chromosome));
 				m_children.push_back(new CNode(chromosome));
+				m_ptr = std::rand() % m_children.size();
 				break;
 			}
 			case 9: {
@@ -282,12 +285,8 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		{
 			output += "seqm" + std::to_string(m_children.size()) + "(" + std::to_string(m_ptr) + ") ";
 		
-			int count = 0;
-			
-			while (count < m_children.size())
+			while (m_ptr < m_children.size())
 			{
-				count++;
-				
 				std::string result = m_children[m_ptr]->evaluate(blackBoard, output);
 			
 				if (result == "failure")
@@ -303,10 +302,10 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 				
 				else
 				{
-					m_ptr = (m_ptr + 1) % m_children.size();
+					m_ptr++;
 				}
 			}
-			
+			m_ptr = 0;
 			return "success";
 		}
 		
@@ -316,12 +315,8 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		{
 			output += "selm" + std::to_string(m_children.size()) + "(" + std::to_string(m_ptr) + ") ";
 			
-			int count = 0;
-			
-			while (count < m_children.size())
+			while (m_ptr < m_children.size())
 			{
-				count++;
-				
 				std::string result = m_children[m_ptr]->evaluate(blackBoard, output);
 			
 				if (result == "success")
@@ -337,10 +332,11 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 				
 				else
 				{
-					m_ptr = (m_ptr + 1) % m_children.size();
+					m_ptr++;
 				}
 			}
 			
+			m_ptr = 0;
 			return "failure";
 		}
 		
@@ -348,8 +344,16 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		case CNode::nodetype::probm3:
 		case CNode::nodetype::probm4:
 		{
-			int index = std::rand() % m_children.size();
-			return m_children[index]->evaluate (blackBoard, output);
+			output += "probm" + std::to_string(m_children.size()) + "(" + std::to_string(m_ptr) + ") ";
+			
+			std::string result = m_children[m_ptr]->evaluate (blackBoard, output);
+			
+			if (result != "running")
+			{
+				m_ptr = std::rand() % m_children.size();
+			}
+			
+			return result;
 		}
 		
 		case CNode::nodetype::repeat:
@@ -399,6 +403,7 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 			
 			else
 			{
+				blackBoard->setMotors(3);
 				m_ptr--;
 				return "success";
 			}
@@ -417,6 +422,7 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 			
 			else
 			{
+				blackBoard->setMotors(1);
 				m_ptr--;
 				return "success";
 			}
@@ -435,6 +441,7 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 			
 			else
 			{
+				blackBoard->setMotors(2);
 				m_ptr--;
 				return "success";
 			}

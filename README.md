@@ -29,6 +29,7 @@ This system is being implemented using ARGoS and DEAP and uses the ARGoS example
 * robots can tell if they're moving towards or away from food or the nest by tracking distance over time
 * distance calculated by tracking minimum communication hops (figure 2)
 * message handling is asynchronous
+* message reception probability 0.95
 * noise added to actuators
 
 ### Sensing

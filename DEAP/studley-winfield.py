@@ -26,10 +26,10 @@ eliteSize = 3
 generations = 50
 
 crossoverProbability = 0.8
-mutSRProbability = 0.05
-mutSSProbability = 0.1
-mutNRProbability = 0.5
-mutECRProbability = 0.5
+mutSRProbability = 0.05 # mutUniform
+mutSSProbability = 0.1  # mutShrink
+mutNRProbability = 0.5  # mutNodeReplacement
+mutECRProbability = 0.5 # mutEphemeral
 
 
 # these values are used to free up the CPU after each generation and evaluation
@@ -77,11 +77,9 @@ def addNodes():
 	if (pSettings['ifgecon']): pset.addPrimitive(robot.ifgecon, [bbInput, constant], str)
 			
 	if (pSettings['ifltvar'] or pSettings['ifltcon'] or pSettings['ifgevar'] or pSettings['ifgecon']): 	
-		pset.addPrimitive(robot.bb, [bbInput], bbInput)
 		pset.addEphemeralConstant("index", lambda: random.randint(0,5), bbInput)
 	
 	if (pSettings['ifltcon'] or pSettings['ifgecon']):
-		pset.addPrimitive(robot.rand, [constant], constant)
 		pset.addEphemeralConstant("constant", lambda: random.randint(0,100), constant)
 
 	if (pSettings['successl']): pset.addTerminal(robot.successl, str)
@@ -99,7 +97,6 @@ def addNodes():
 
 	if (pSettings['repeat']):
 		pset.addPrimitive(robot.repeat, [repetitions, str],  str)
-		pset.addPrimitive(robot.repetitions, [repetitions], repetitions)
 		pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitions)
 
 	if (pSettings['successd']): pset.addPrimitive(robot.successd, [str],  str)
@@ -143,7 +140,7 @@ def saveBest(gen, population):
 	best = getBest(population)
 	
 	logHeaders = "Time,Seed,Robots,Iterations,Population Size,Tournament Size,Elites,Generations,Fitness,Chromosome,Nodes"
-	logString = str(time.time())[0:-3]+", "
+	logString = str(time.time())[0:10]+", "
 	logString += str(deapSeed)+", "
 	logString += str(sqrtRobots)+", "
 	logString += str(iterations)+", "
@@ -175,7 +172,7 @@ def playbackBest(population):
 		print >> f, sqrtRobots	
 		print >> f, best		
 		
-	os.rename('../log.txt', '../logs/log-'+str(time.time())[0:-3]+'.txt')
+	os.rename('../log.txt', '../logs/log-'+str(time.time())[0:10]+'.txt')
 	
 	subprocess.call(["/bin/bash", "playback", "", "./"])
 
@@ -262,7 +259,7 @@ def eaInit(population, toolbox, ngen, stats=None, halloffame=None, verbose=__deb
 	# save each fitness score and chromosome to file
 	with open('../log.txt', 'w') as f:
 		print >> f, ""
-		print >> f, str(time.time())[0:-3]
+		print >> f, str(time.time())[0:10]
 		for ind in population:
 			print >> f, str("%.2f" % ind.fitness.values[0]) + " " + str(ind)
 		print >> f, "-----------------------------------------------------------------------------------"
@@ -337,6 +334,66 @@ def eaLoop(logbook, population, toolbox, ngen, stats=None, halloffame=None, verb
 	# save parameters and best chromosome to file if we haven't already
 	if (gen % 10 != 0):
 		saveBest(gen, toolbox.select(population, len(population)))
+
+
+def genFull(pset, min_, max_, type_=None):
+	
+	# copied verbatim from deap gp module
+	
+	def condition(height, depth):
+		return depth == height
+	return generate(pset, min_, max_, condition, type_)
+
+
+def generate(pset, min_, max_, condition, type_=None):
+	
+	# copied verbatim from deap gp module but with an extra clause
+	# allowing terminal types with no corresponding primitive
+	
+	if type_ is None:
+		type_ = pset.ret
+	expr = []
+	height = random.randint(min_, max_)
+	stack = [(0, type_)]
+	time.sleep(0.2)
+	while len(stack) != 0:
+		depth, type_ = stack.pop()
+		if condition(height, depth):
+			try:
+				term = random.choice(pset.terminals[type_])
+			except IndexError:
+				_, _, traceback = sys.exc_info()
+				raise IndexError, "The gp.generate function tried to add " \
+				                  "a terminal of type '%s', but there is " \
+				                  "none available." % (type_,), traceback
+			if gp.isclass(term):
+				term = term()
+			expr.append(term)
+		else:
+			primitiveAvailable = True
+			try:
+				prim = random.choice(pset.primitives[type_])
+			except IndexError:
+				primitiveAvailable = False
+                
+			if primitiveAvailable:
+				expr.append(prim)
+				for arg in reversed(prim.args):
+					stack.append((depth + 1, arg))
+			else:
+				try:
+					term = random.choice(pset.terminals[type_])
+				except IndexError:
+					_, _, traceback = sys.exc_info()
+					raise IndexError, "The gp.generate function tried to add " \
+					                  "a terminal of type '%s', but there is " \
+					                  "none available." % (type_,), traceback
+				if gp.isclass(term):
+					term = term()
+				expr.append(term)
+                
+	return expr
+
 
 
 def evaluateRobot(individual):
@@ -433,7 +490,7 @@ creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness)
 
 toolbox = base.Toolbox()
 
-toolbox.register("expr_init", gp.genFull, pset=pset, min_=1, max_=4)
+toolbox.register("expr_init", genFull, pset=pset, min_=1, max_=4)
 
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -442,7 +499,7 @@ toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("evaluate", evaluateRobot)
 toolbox.register("select", selTournament, tournsize=tournamentSize)
 toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
+toolbox.register("expr_mut", genFull, min_=0, max_=2)
 toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 toolbox.register("mutSubtreeShrink", gp.mutShrink)
 toolbox.register("mutNodeReplace", gp.mutNodeReplacement, pset=pset)

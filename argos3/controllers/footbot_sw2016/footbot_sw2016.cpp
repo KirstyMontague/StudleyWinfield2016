@@ -13,7 +13,8 @@ CFootBotSW2016::CFootBotSW2016() :
    m_pcPosition(NULL),
    m_pcRABA(NULL),
    m_pcRABS(NULL),
-   m_fWheelVelocity(5.0f),
+   m_rWheelVelocity(5.0f),
+   m_lWheelVelocity(5.0f),
    m_trackingID(0),
    m_count(0),
    m_food(0) {
@@ -34,9 +35,19 @@ void CFootBotSW2016::Init(TConfigurationNode& t_node)
 	m_pcRABS      = GetSensor  <CCI_RangeAndBearingSensor       >("range_and_bearing"    );
 	m_pcLEDs      = GetActuator<CCI_LEDsActuator                >("leds"                 );
 
-	GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);	
+	Real wheelVelocity;
+	Real noise;
+	GetNodeAttributeOrDefault(t_node, "velocity", wheelVelocity, wheelVelocity);
 	GetNodeAttributeOrDefault(t_node, "trackingID", m_trackingID, m_trackingID);
 	GetNodeAttributeOrDefault(t_node, "verbose", m_verbose, m_verbose);
+	
+	noise = (std::rand() % 20);
+	noise = (noise + 90) / 100;
+	m_rWheelVelocity = wheelVelocity * noise;
+	
+	noise = (std::rand() % 20);
+	noise = (noise + 90) / 100;
+	m_lWheelVelocity = wheelVelocity * noise;
 	
 	m_trackingIDs.push_back(m_trackingID);
 	

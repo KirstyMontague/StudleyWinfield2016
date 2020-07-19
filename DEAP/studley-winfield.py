@@ -24,6 +24,7 @@ populationSize = 15
 tournamentSize = 3
 eliteSize = 3
 generations = 50
+maxFood = 8
 
 crossoverProbability = 0.8
 mutSRProbability = 0.05 # mutUniform
@@ -441,13 +442,36 @@ def evaluateRobot(individual):
 		thisFitness /= sqrtRobots * sqrtRobots
 		runningFitness += thisFitness
 	
-	# divide to get average per iteration
+	# divide to get average per iteration and normalise
 	fitness = runningFitness / iterations
+	fitness = fitness / maxFood
+	
+	# apply derating factor to large trees	
+	fitness *= deratingFactor(individual)
 	
 	# pause to free up CPU
 	time.sleep(evalSleep)
 	
 	return (fitness, )
+
+
+def deratingFactor(individual):
+
+	height = float(individual.height)
+	length = float(len(individual))	
+	
+	rUsage = height / 30
+	if (length / 140 > rUsage):
+		rUsage = length / 140
+	
+	factor = 1
+	if rUsage > .75:
+		rUsage -= .75
+		factor = 1 - (rUsage * 4)
+		if factor < 0:
+			factor = 0
+	
+	return factor
 
 
 class robotObject(object):

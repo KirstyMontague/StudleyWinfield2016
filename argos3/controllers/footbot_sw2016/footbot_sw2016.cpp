@@ -107,6 +107,10 @@ void CFootBotSW2016::sensing()
 	// for each range and bearing signal received 
 	for(size_t i = 0; i < tPackets.size(); ++i) {
 		
+		if (std::rand() % 20 == 0) {
+			continue;
+		}
+		
 		auto data = tPackets[i].Data;
 		
 		int id;

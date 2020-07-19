@@ -70,6 +70,9 @@ void CFootBotSW2016::sensing()
 	bool tracking = inTrackingIDs() && m_verbose;
 	std::string output;
 	
+	// reset receivedSignal
+	m_blackBoard->setReceivedSignal(false);
+	
 	// read sensor data
 	const CCI_PositioningSensor::SReading& pos = m_pcPosition->GetReading();
 	const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();	
@@ -109,10 +112,17 @@ void CFootBotSW2016::sensing()
 		int id;
 		short int nest;
 		short int food;
+		short int signal;
 		data >> id;
 		data >> nest;
 		data >> food;
-				
+		data >> signal;
+		
+		if (signal == 1) {
+			m_blackBoard->setReceivedSignal(true);
+			if (tracking) output += "signal received from #" + std::to_string(id) + "\n";
+		}
+		
 		// if we haven't already received a signal from this robot in the current timestep	
 		if (std::find(IDs.begin(), IDs.end(), id) == IDs.end()) {
 			
@@ -182,15 +192,16 @@ void CFootBotSW2016::actuation()
 {
 	short int distNest = m_blackBoard->getDistNest() * 10000;
 	short int distFood = m_blackBoard->getDistFood() * 10000;
-	if (inTrackingIDs() && m_verbose) std::cout << GetId() << " RAB signal: " << distFood << std::endl;
+	short int sendSignal = m_blackBoard->getSendSignal() < 0 ? 0 : 1;
 	
-	// write robot ID, distance to nest and distance to food to buffer,
-	// plus an arbitrary value to use remaining bytes
+	if (inTrackingIDs() && m_verbose) std::cout << GetId() << " RAB signal: " << sendSignal << std::endl;
+	
+	// write robot ID, distance to nest, distance to food and signal to buffer
 	CByteArray cBuf;	
 	cBuf << std::stoi(GetId());
 	cBuf << distNest;
 	cBuf << distFood;
-	cBuf << (short int) (0);
+	cBuf << sendSignal;
 	
 	// send range and bearing signal
 	m_pcRABA->ClearData();

@@ -42,24 +42,6 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 			if (word == "set") token = 19;
 			if (word == "successl") token = 20;
 			if (word == "failurel") token = 21;
-			
-			if (word == "rand") {
-				token = 22;
-				chromosome.erase(chromosome.begin());
-				word = chromosome.at(0);
-			}
-				
-			if (word == "bb") {
-				token = 23;
-				chromosome.erase(chromosome.begin());
-				word = chromosome.at(0);
-			}
-
-			if (word == "repetitions") {
-				token = 24;
-				chromosome.erase(chromosome.begin());
-				word = chromosome.at(0);
-			}
 		}
 		
 		chromosome.erase(chromosome.begin());
@@ -136,9 +118,6 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				
 				m_type = nodetype::repeat;
 				
-				while (chromosome.at(0) == "repetitions") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 				
@@ -176,15 +155,9 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				
 				m_type = nodetype::ifltvar;		
 				
-				while (chromosome.at(0) == "bb") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
-				while (chromosome.at(0) == "bb") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
@@ -194,15 +167,9 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				
 				m_type = nodetype::ifgevar;		
 				
-				while (chromosome.at(0) == "bb") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
-				while (chromosome.at(0) == "bb") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
@@ -212,15 +179,9 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				
 				m_type = nodetype::ifltcon;
 									
-				while (chromosome.at(0) == "bb" || chromosome.at(0) == "rand") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
-				while (chromosome.at(0) == "bb" || chromosome.at(0) == "rand") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
@@ -230,22 +191,24 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				
 				m_type = nodetype::ifgecon;	
 				
-				while (chromosome.at(0) == "bb" || chromosome.at(0) == "rand") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
-				while (chromosome.at(0) == "bb" || chromosome.at(0) == "rand") {
-					chromosome.erase(chromosome.begin());
-				}
 				m_children.push_back(new CNode(chromosome.at(0)));
 				chromosome.erase(chromosome.begin());
 			
 				break;
 			}
-			case 19: { // not implemented
+			case 19: {
+				
 				m_type = nodetype::set;
+				
+				m_children.push_back(new CNode(chromosome.at(0)));
+				chromosome.erase(chromosome.begin());
+			
+				m_children.push_back(new CNode(chromosome.at(0)));
+				chromosome.erase(chromosome.begin());
+			
 				break;
 			}
 			case 20: {
@@ -446,6 +409,23 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 				return "success";
 			}
 		}
+				
+		case CNode::nodetype::set:
+		{
+			if (m_children[0]->getData() == 1)
+			{
+				output += "set scratchpad = " + std::to_string(m_children[1]->getData()) + " ";
+				blackBoard->setScratchpad(m_children[1]->getData());
+			}
+			
+			if (m_children[0]->getData() == 2)
+			{
+				output += "set signal = " + std::to_string(m_children[1]->getData()) + " ";
+				blackBoard->setSendSignal(m_children[1]->getData());
+			}
+			
+			return "success";
+		}
 		
 		case CNode::nodetype::ifltvar:
 		{
@@ -469,7 +449,6 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifltcon:
 		{
-			int index = m_children[0]->getData();
 			float value = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
 			float data = m_children[1]->getData();
 			
@@ -480,7 +459,6 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifgecon:
 		{
-			int index = m_children[0]->getData();
 			float value = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
 			float data = m_children[1]->getData();
 			
@@ -510,33 +488,45 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 
 float CNode::percentageBlackBoardValue(CBlackBoard* blackBoard, int index)
 {
-	if (index == 0) { // boolean
-		return (!blackBoard->getDetectedFood()) ? 0 : 100;
+	if (index == 1) { // values between -100 and 100
+		return blackBoard->getScratchpad();
 	}
 	
-	if (index == 1) { // boolean
-		return (!blackBoard->getCarryingFood()) ? 0 : 100;
+	if (index == 2) { // values between -100 and 100
+		return blackBoard->getSendSignal();
 	}
 	
-	if (index == 2) { // values between 0 and 1
-		return blackBoard->getDensity() * 100;
+	if (index == 3) { // boolean
+		return (!blackBoard->getReceivedSignal()) ? -100 : 100;
 	}
 	
-	if (index == 3) { // values between -4/7 and 4/7
+	if (index == 4) { // boolean
+		return (!blackBoard->getDetectedFood()) ? -100 : 100;
+	}
+	
+	if (index == 5) { // boolean
+		return (!blackBoard->getCarryingFood()) ? -100 : 100;
+	}
+	
+	if (index == 6) { // values between 0 and 1
+		return (blackBoard->getDensity() * 200 - 100);
+	}
+	
+	if (index == 7) { // values between -4/7 and 4/7
 		float change = (blackBoard->getDensityChange() / 4) * 7; // convert to a value between -1 and 1
-		change = (change * 50) + 50; // convert to a value between 0 and 100
+		change *= 100; // convert to a value between -100 and 100
 		return change;
 	}
 	
-	if (index == 4) { // values between -4/7 and 4/7
+	if (index == 8) { // values between -4/7 and 4/7
 		float change = (blackBoard->getNestChange() / 4) * 7; // convert to a value between -1 and 1
-		change = (change * 50) + 50; // convert to a value between 0 and 100
+		change *= 100; // convert to a value between -100 and 100
 		return change;
 	}
 	
-	if (index == 5) { // values between -4/7 and 4/7
+	if (index == 9) { // values between -4/7 and 4/7
 		float change = (blackBoard->getFoodChange() / 4) * 7; // convert to a value between -1 and 1
-		change = (change * 50) + 50; // convert to a value between 0 and 100
+		change *= 100; // convert to a value between -100 and 100
 		return change;
 	}	
 }

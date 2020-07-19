@@ -17,6 +17,15 @@ class CBlackBoard
 		int getMotors() {return m_motors;}
 		void setMotors(int motors) {m_motors = motors;}
 		
+		int getScratchpad() {return m_scratchpad;}
+		void setScratchpad(int scratchpad) {m_scratchpad = scratchpad;}
+		
+		int getSendSignal() {return m_sendSignal;}
+		void setSendSignal(int signal) {m_sendSignal = signal;}
+		
+		bool getReceivedSignal() {return m_receivedSignal;}
+		void setReceivedSignal(bool received) {m_receivedSignal = received;}
+		
 		bool getCarryingFood() {return m_carryingFood;}
 		void setCarryingFood(bool carryingFood) {m_carryingFood = carryingFood;}
 		
@@ -42,10 +51,18 @@ class CBlackBoard
 	
 		int m_motors;
 		
+		int m_scratchpad;
+		
+		int m_sendSignal;
+		
+		bool m_receivedSignal;
+		
 		bool m_detectedFood;
+		
 		bool m_carryingFood;
 		
 		float m_density;
+		
 		float m_densityChange;
 		std::vector<float> m_densityVector;
 		

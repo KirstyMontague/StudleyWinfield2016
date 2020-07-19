@@ -42,7 +42,7 @@ void CSW2016LoopFunctions::Init(TConfigurationNode& t_tree)
 		GetNodeAttribute(tDistr, "name", filename);
 	}
 
-	// read number of robots and chromosome from fil
+	// read number of robots and chromosome from file
    std::ifstream chromosomeFile("../"+filename);   
    
 	int sqrtRobots = 0;

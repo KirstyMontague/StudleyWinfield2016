@@ -62,7 +62,7 @@ def nodeSettings():
 	pSettings['mf'] = True
 	pSettings['mr'] = True
 	pSettings['ml'] = True
-	# pSettings['set'] = True
+	pSettings['set'] = True
 	pSettings['successl'] = True
 	pSettings['failurel'] = True
 
@@ -71,20 +71,6 @@ def addNodes():
 	
 	# add the nodes chosen in nodeSettings() and dependencies if they have any
 	
-	if (pSettings['ifltvar']): pset.addPrimitive(robot.ifltvar, [bbInput, bbInput], str)
-	if (pSettings['ifltcon']): pset.addPrimitive(robot.ifltcon, [bbInput, constant], str)
-	if (pSettings['ifgevar']): pset.addPrimitive(robot.ifgevar, [bbInput, bbInput], str)
-	if (pSettings['ifgecon']): pset.addPrimitive(robot.ifgecon, [bbInput, constant], str)
-			
-	if (pSettings['ifltvar'] or pSettings['ifltcon'] or pSettings['ifgevar'] or pSettings['ifgecon']): 	
-		pset.addEphemeralConstant("index", lambda: random.randint(0,5), bbInput)
-	
-	if (pSettings['ifltcon'] or pSettings['ifgecon']):
-		pset.addEphemeralConstant("constant", lambda: random.randint(0,100), constant)
-
-	if (pSettings['successl']): pset.addTerminal(robot.successl, str)
-	if (pSettings['failurel']): pset.addTerminal(robot.failurel, str)
-
 	if (pSettings['selm2']): pset.addPrimitive(robot.selm2, [str, str],  str)
 	if (pSettings['seqm2']): pset.addPrimitive(robot.seqm2, [str, str],  str)
 	if (pSettings['probm2']): pset.addPrimitive(robot.probm2, [str, str],  str)
@@ -95,16 +81,35 @@ def addNodes():
 	if (pSettings['seqm4']): pset.addPrimitive(robot.seqm4, [str, str, str, str],  str)
 	if (pSettings['probm4']): pset.addPrimitive(robot.probm4, [str, str, str, str],  str)
 
-	if (pSettings['repeat']):
-		pset.addPrimitive(robot.repeat, [repetitions, str],  str)
-		pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitions)
-
 	if (pSettings['successd']): pset.addPrimitive(robot.successd, [str],  str)
 	if (pSettings['failured']): pset.addPrimitive(robot.failured, [str],  str)
+
+	if (pSettings['repeat']):
+		pset.addPrimitive(robot.repeat, [repetitionsConstant, str],  str)
+		pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitionsConstant)
+
+	if (pSettings['ifltvar']): pset.addPrimitive(robot.ifltvar, [bbReadIndex, bbReadIndex], str)
+	if (pSettings['ifltcon']): pset.addPrimitive(robot.ifltcon, [bbReadIndex, int], str)
+	if (pSettings['ifgevar']): pset.addPrimitive(robot.ifgevar, [bbReadIndex, bbReadIndex], str)
+	if (pSettings['ifgecon']): pset.addPrimitive(robot.ifgecon, [bbReadIndex, int], str)
+
+	if (pSettings['ifltvar'] or pSettings['ifltcon'] or pSettings['ifgevar'] or pSettings['ifgecon']):
+		pset.addEphemeralConstant("bbReadIndex", lambda: random.randint(1,1), bbReadIndex)
 
 	if (pSettings['mf']): pset.addTerminal(robot.mf, str)
 	if (pSettings['ml']): pset.addTerminal(robot.ml, str)
 	if (pSettings['mr']): pset.addTerminal(robot.mr, str)
+
+	if (pSettings['successl']): pset.addTerminal(robot.successl, str)
+	if (pSettings['failurel']): pset.addTerminal(robot.failurel, str)
+
+	if (pSettings['set']):
+		pset.addPrimitive(robot.set, [bbWriteIndex, int],  str)
+		pset.addEphemeralConstant("bbWriteIndex", lambda: random.randint(1,1), bbWriteIndex)
+
+	if (pSettings['set'] or pSettings['ifltcon'] or pSettings['ifgecon']):
+		pset.addEphemeralConstant("bbConstant", lambda: random.randint(-100, 100), int)
+
 
 
 def getBest(population):	
@@ -395,7 +400,6 @@ def generate(pset, min_, max_, condition, type_=None):
 	return expr
 
 
-
 def evaluateRobot(individual):
 	
 	# save number of robots and chromosome to file
@@ -457,6 +461,7 @@ class robotObject(object):
 	def seqm4(one, two): print ""
 	def selm4(one, two): print ""
 	def probm4(one, two): print ""
+	def set(): print ""
 	def mf(): print ""
 	def ml(): print ""
 	def mr(): print ""
@@ -469,13 +474,11 @@ class robotObject(object):
 	def repeat(): print ""
 	def successd(): print ""
 	def failured(): print ""
-	def bb(): print ""
-	def rand(): print ""
-	def repetitions(): print ""
 
-class bbInput(): x = 1	
-class constant(): x = 1
-class repetitions(): x = 1
+class bbReadIndex(): x = 1
+class bbWriteIndex(): x = 1
+class bbConstant(): x = 1
+class repetitionsConstant(): x = 1
 
 
 robot = robotObject()

@@ -74,12 +74,12 @@ class eaParams():
 			pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitionsConstant)
 
 		if (self.nodes['ifltvar']): pset.addPrimitive(robot.ifltvar, [bbReadIndex, bbReadIndex], str)
-		if (self.nodes['ifltcon']): pset.addPrimitive(robot.ifltcon, [bbReadIndex, int], str)
+		if (self.nodes['ifltcon']): pset.addPrimitive(robot.ifltcon, [bbReadIndex, float], str)
 		if (self.nodes['ifgevar']): pset.addPrimitive(robot.ifgevar, [bbReadIndex, bbReadIndex], str)
-		if (self.nodes['ifgecon']): pset.addPrimitive(robot.ifgecon, [bbReadIndex, int], str)
+		if (self.nodes['ifgecon']): pset.addPrimitive(robot.ifgecon, [bbReadIndex, float], str)
 
 		if (self.nodes['ifltvar'] or self.nodes['ifltcon'] or self.nodes['ifgevar'] or self.nodes['ifgecon']):
-			pset.addEphemeralConstant("bbReadIndex", lambda: random.randint(1,1), bbReadIndex)
+			pset.addEphemeralConstant("bbReadIndex", lambda: random.randint(1,9), bbReadIndex)
 
 		if (self.nodes['mf']): pset.addTerminal(robot.mf, str)
 		if (self.nodes['ml']): pset.addTerminal(robot.ml, str)
@@ -89,11 +89,11 @@ class eaParams():
 		if (self.nodes['failurel']): pset.addTerminal(robot.failurel, str)
 
 		if (self.nodes['set']):
-			pset.addPrimitive(robot.set, [bbWriteIndex, int],  str)
-			pset.addEphemeralConstant("bbWriteIndex", lambda: random.randint(1,1), bbWriteIndex)
+			pset.addPrimitive(robot.set, [bbWriteIndex, float],  str)
+			pset.addEphemeralConstant("bbWriteIndex", lambda: random.randint(1,2), bbWriteIndex)
 
 		if (self.nodes['set'] or self.nodes['ifltcon'] or self.nodes['ifgecon']):
-			pset.addEphemeralConstant("bbConstant", lambda: random.randint(-100, 100), int)
+			pset.addEphemeralConstant("bbConstant", lambda: random.uniform(-1, 1), float)
 
 
 class robotObject(object):

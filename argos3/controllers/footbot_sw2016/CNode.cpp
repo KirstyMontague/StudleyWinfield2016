@@ -8,7 +8,7 @@
 
 CNode::CNode(std::string word)
 {
-	m_data = std::stoi(word);
+	m_data = std::stof(word);
 }
 
 CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
@@ -429,8 +429,8 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifltvar:
 		{
-			float value1 = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
-			float value2 = percentageBlackBoardValue(blackBoard, m_children[1]->getData());
+			float value1 = normaliseBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value2 = normaliseBlackBoardValue(blackBoard, m_children[1]->getData());
 			
 			std::string result = (value1 < value2) ? "success" : "failure";
 			output += std::to_string(value1) + " lt " + std::to_string(value2) + " " + result + " ";
@@ -439,8 +439,8 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifgevar:
 		{
-			float value1 = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
-			float value2 = percentageBlackBoardValue(blackBoard, m_children[1]->getData());
+			float value1 = normaliseBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value2 = normaliseBlackBoardValue(blackBoard, m_children[1]->getData());
 			
 			std::string result = (value1 >= value2) ? "success" : "failure";
 			output += std::to_string(value1) + " gte " + std::to_string(value2) + " " + result + " ";
@@ -449,21 +449,21 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::ifltcon:
 		{
-			float value = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value = normaliseBlackBoardValue(blackBoard, m_children[0]->getData());
 			float data = m_children[1]->getData();
 			
 			std::string result = (value < data) ? "success" : "failure";
-			output += std::to_string(value) + " lt " + std::to_string(m_children[1]->getData()) + " " + result + " ";
+			output += std::to_string(value) + " lt " + std::to_string(data) + " " + result + " ";
 			return result;
 		}
 		
 		case CNode::nodetype::ifgecon:
 		{
-			float value = percentageBlackBoardValue(blackBoard, m_children[0]->getData());
+			float value = normaliseBlackBoardValue(blackBoard, m_children[0]->getData());
 			float data = m_children[1]->getData();
 			
 			std::string result = (value >= data) ? "success" : "failure";
-			output += std::to_string(value) + " gte " + std::to_string(m_children[1]->getData()) + " " + result + " ";
+			output += std::to_string(value) + " gte " + std::to_string(data) + " " + result + " ";
 			return result;			
 		}
 
@@ -486,47 +486,41 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 	return 0;
 }
 
-float CNode::percentageBlackBoardValue(CBlackBoard* blackBoard, int index)
+float CNode::normaliseBlackBoardValue(CBlackBoard* blackBoard, int index)
 {
 	if (index == 1) { // values between -100 and 100
-		return blackBoard->getScratchpad();
+		return blackBoard->getScratchpad() / 100;
 	}
 	
 	if (index == 2) { // values between -100 and 100
-		return blackBoard->getSendSignal();
+		return blackBoard->getSendSignal() / 100;
 	}
 	
 	if (index == 3) { // boolean
-		return (!blackBoard->getReceivedSignal()) ? -100 : 100;
+		return (!blackBoard->getReceivedSignal()) ? -1 : 1;
 	}
 	
 	if (index == 4) { // boolean
-		return (!blackBoard->getDetectedFood()) ? -100 : 100;
+		return (!blackBoard->getDetectedFood()) ? -1 : 1;
 	}
 	
 	if (index == 5) { // boolean
-		return (!blackBoard->getCarryingFood()) ? -100 : 100;
+		return (!blackBoard->getCarryingFood()) ? -1 : 1;
 	}
 	
 	if (index == 6) { // values between 0 and 1
-		return (blackBoard->getDensity() * 200 - 100);
+		return (blackBoard->getDensity() * 2 - 1);
 	}
 	
 	if (index == 7) { // values between -4/7 and 4/7
-		float change = (blackBoard->getDensityChange() / 4) * 7; // convert to a value between -1 and 1
-		change *= 100; // convert to a value between -100 and 100
-		return change;
+		return (blackBoard->getDensityChange() / 4) * 7;
 	}
 	
 	if (index == 8) { // values between -4/7 and 4/7
-		float change = (blackBoard->getNestChange() / 4) * 7; // convert to a value between -1 and 1
-		change *= 100; // convert to a value between -100 and 100
-		return change;
+		return (blackBoard->getNestChange() / 4) * 7;
 	}
 	
 	if (index == 9) { // values between -4/7 and 4/7
-		float change = (blackBoard->getFoodChange() / 4) * 7; // convert to a value between -1 and 1
-		change *= 100; // convert to a value between -100 and 100
-		return change;
+		return (blackBoard->getFoodChange() / 4) * 7;
 	}	
 }

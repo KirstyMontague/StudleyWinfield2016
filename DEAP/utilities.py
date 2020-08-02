@@ -52,7 +52,7 @@ class utilities():
 		logString += str(self.params.eliteSize)+", "
 		logString += str(gen)+", "
 		logString += str("%.2f" % best.fitness.values[0])+", "
-		logString += "\""+str(best)+"\", "
+		logString += "\""+self.printTree(best)+"\", "
 		
 		logString += "\""
 		
@@ -98,3 +98,18 @@ class utilities():
 		
 		return factor
 
+	def printTree(self, tree):
+		
+		string = ""
+		stack = []
+		for node in tree:
+			stack.append((node, []))
+			while len(stack[-1][1]) == stack[-1][0].arity:
+				prim, args = stack.pop()
+				string = prim.format(*args)
+				if (string[1:4].find(".") >= 0): string = string[0:5]
+				if len(stack) == 0:
+					break  # If stack is empty, all nodes should have been seen
+				stack[-1][1].append(string)
+
+		return string

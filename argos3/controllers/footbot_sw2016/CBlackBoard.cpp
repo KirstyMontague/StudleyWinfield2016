@@ -19,7 +19,9 @@ void CBlackBoard::setDetectedFood(bool detected)
 
 void CBlackBoard::updateDensityVector(float density)
 {
-	density = density / m_numRobots;
+	// 1107 is the maximum density value that can be contributed by a single
+	// robot and 6 is the number of robots that can fit around a single robot
+	density = density / (1107 * 6);
 	
 	if (m_densityVector.size() > 6)
 	{
@@ -31,6 +33,8 @@ void CBlackBoard::updateDensityVector(float density)
 
 void CBlackBoard::setDensity(bool first, int robotID)
 {
+	if (robotID != -1) std::cout << "density ";
+	
 	float density = 0;
 	for (auto d : m_densityVector)
 	{
@@ -48,7 +52,7 @@ void CBlackBoard::setDensity(bool first, int robotID)
 
 void CBlackBoard::updateDistNestVector(float distance)
 {
-	distance = distance / 10000;
+	distance = distance / 500;
 	
 	if (m_distNestVector.size() > 6)
 	{
@@ -60,7 +64,7 @@ void CBlackBoard::updateDistNestVector(float distance)
 
 void CBlackBoard::setDistNest(bool first, int robotID)
 {
-	if (robotID != -1) std::cout << robotID << ": ";
+	if (robotID != -1) std::cout << "nest ";
 	
 	float distance = 0;
 	for (auto d : m_distNestVector)
@@ -80,7 +84,7 @@ void CBlackBoard::setDistNest(bool first, int robotID)
 
 void CBlackBoard::updateDistFoodVector(float distance)
 {
-	distance = distance / 10000;
+	distance = distance / 500;
 	
 	if (m_distFoodVector.size() > 6)
 	{
@@ -92,7 +96,7 @@ void CBlackBoard::updateDistFoodVector(float distance)
 
 void CBlackBoard::setDistFood(bool first, int robotID)
 {
-	if (robotID != -1) std::cout << robotID << ": ";
+	if (robotID != -1) std::cout << "food ";
 	
 	float distance = 0;
 	for (auto d : m_distFoodVector)

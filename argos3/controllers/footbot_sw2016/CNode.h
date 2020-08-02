@@ -42,15 +42,15 @@ class CNode
 		CNode(std::vector<std::string>& chromosome);
 		CNode(std::string word);
 		std::string evaluate(CBlackBoard* blackBoard, std::string& output);		
-		int getData() {return m_data;}
+		float getData() {return m_data;}
 	
 	private:
 	
-		float percentageBlackBoardValue(CBlackBoard* blackBoard, int index);
+		float normaliseBlackBoardValue(CBlackBoard* blackBoard, int index);
 		int m_ptr;
 		std::vector<CNode*> m_children;
 		nodetype m_type;
-		int m_data;
+		float m_data;
 	
 };
 

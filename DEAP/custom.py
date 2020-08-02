@@ -138,7 +138,7 @@ class customGP():
 				
 			# print each fitness score and chromosome
 			for ind in newPop:
-				print str("%.2f" % ind.fitness.values[0]) + " " + str(ind)
+				print str("%.2f" % ind.fitness.values[0]) + " " + self.utils.printTree(ind)
 
 			# Update the hall of fame with the generated individuals
 			if halloffame is not None:
@@ -159,12 +159,12 @@ class customGP():
 			# save each fitness score and chromosome to file
 			with open('../log.txt', 'a') as f:
 				for ind in newPop:
-					print >> f, str("%.2f" % ind.fitness.values[0]) + " " + str(ind)
+					print >> f, str("%.2f" % ind.fitness.values[0]) + " " + self.utils.printTree(ind)
 				print >> f, str(gen) + " -----------------------------------------------------------------------------------"
 				
 			# print the best chromosome
 			best = self.utils.getBest(toolbox.select(population, len(population)))
-			print best
+			print self.utils.printTree(best)
 			
 			# every tenth generation save parameters and best chromosome to file
 			if (gen % 10 == 0):

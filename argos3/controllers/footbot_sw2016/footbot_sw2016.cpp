@@ -82,12 +82,6 @@ void CFootBotSW2016::sensing()
 	// distance from the centre of the arena
 	double r = sqrt((x * x) + (y * y));
 	
-	// defaults for density of robots and distance to food or nest
-	std::vector<int> IDs;	
-	int density = 0;
-	float nestHops = (r < .5) ? -1000 : 9000;
-	float foodHops = (r < 1) ? 9000 : -1000;
-	
 	// update the blackboard to reflect whether the robot is in the food region
 	m_blackBoard->setDetectedFood(r >= 1);
 	
@@ -103,11 +97,20 @@ void CFootBotSW2016::sensing()
 	{
 		m_pcLEDs->SetAllColors(CColor::GREEN);
 	}
-		
+	
+	// map for density of robots and defaults for distance to food or nest
+	std::map<int, double> IDs;
+	float nestRange = (r < .5) ? 0 : 500;
+	float foodRange = (r < 1) ? 500 : 0;
+	
 	// for each range and bearing signal received 
 	for(size_t i = 0; i < tPackets.size(); ++i) {
 		
 		if (std::rand() % 20 == 0) {
+			continue;
+		}
+		
+		if (tPackets[i].Range > 100) {
 			continue;
 		}
 		
@@ -122,53 +125,33 @@ void CFootBotSW2016::sensing()
 		data >> food;
 		data >> signal;
 		
-		if (signal == 1) {
+		if (signal == 1)
+		{
 			m_blackBoard->setReceivedSignal(true);
 			if (tracking) output += "signal received from #" + std::to_string(id) + "\n";
 		}
 		
 		// if we haven't already received a signal from this robot in the current timestep	
-		if (std::find(IDs.begin(), IDs.end(), id) == IDs.end()) {
-			
-			if (tracking) output += std::to_string(id) + " ";
-		
-			// if the other robot is within range
-			if (tPackets[i].Range < 35) {
-				
-				if (tracking) output += std::to_string(food) + " | ";
-				
-				// save nest hops value if lower than the one currently stored
-				if (nest < nestHops) {
-					nestHops = nest;
-				}
-				
-				// save food hops value if lower than the one currently stored
-				if (food < foodHops) {
-					foodHops = food;
-				}
-				
-				density++;
-			}
-			else
-			{
-				if (tracking) output += "x | ";
-			}
-		
-			// save this robot's ID
-			IDs.push_back(id);
-		}
-		else
+		if (IDs.find(id) == IDs.end())
 		{
-			if (tracking) output += "d | ";
+			// save distance to nest and food if lower than the ones currently stored
+			if (nest + tPackets[i].Range < nestRange) nestRange = nest + tPackets[i].Range;
+			if (food + tPackets[i].Range < foodRange) foodRange = food + tPackets[i].Range;
+			
+			// store density value for this robot
+			Real range = 1 / (ARGOS_PI * ((tPackets[i].Range / 1000) * (tPackets[i].Range / 1000))); // max = 1107
+			IDs.insert(std::pair<int, double>(id, range));
 		}
 	}
 	
-	// increment nest and food hops
-	nestHops += 1000;
-	foodHops += 1000;
+	// calculate density
+	float density = 0;
+	for (auto it = IDs.begin(); it != IDs.end(); ++it)
+	{
+		density += it->second;
+	}
 	
-	if (tracking) output += std::to_string(foodHops);	
-	if (tracking) std::cout << GetId() << " : " << output <<std::endl;
+	if (tracking) std::cout << output <<std::endl;
 	
 	// save density and change in density
 	m_blackBoard->updateDensityVector(density);
@@ -178,14 +161,14 @@ void CFootBotSW2016::sensing()
 	}
 	
 	// save distance to nest and change in distance
-	m_blackBoard->updateDistNestVector(nestHops);
+	m_blackBoard->updateDistNestVector(nestRange);
 	if (m_count == 2 || m_count % 4 == 0)
 	{
 		m_blackBoard->setDistNest((m_count == 2), (tracking ? std::stoi(GetId()) : -1));
 	}
 	
 	// save distance to food and change in distance
-	m_blackBoard->updateDistFoodVector(foodHops);
+	m_blackBoard->updateDistFoodVector(foodRange);
 	if (m_count == 2 || m_count % 4 == 0)
 	{
 		m_blackBoard->setDistFood((m_count == 2), (tracking ? std::stoi(GetId()) : -1));
@@ -194,11 +177,10 @@ void CFootBotSW2016::sensing()
 
 void CFootBotSW2016::actuation() 
 {
-	short int distNest = m_blackBoard->getDistNest() * 10000;
-	short int distFood = m_blackBoard->getDistFood() * 10000;
-	short int sendSignal = m_blackBoard->getSendSignal() < 0 ? 0 : 1;
-	
-	if (inTrackingIDs() && m_verbose) std::cout << GetId() << " RAB signal: " << sendSignal << std::endl;
+	short int id = std::stoi(GetId());
+	short int distNest = m_blackBoard->getDistNest() * 500;
+	short int distFood = m_blackBoard->getDistFood() * 500;
+	short int sendSignal = m_blackBoard->getSendSignal() <= 0 ? 0 : 1;
 	
 	// write robot ID, distance to nest, distance to food and signal to buffer
 	CByteArray cBuf;	
@@ -225,11 +207,13 @@ void CFootBotSW2016::ControlStep()
 		// send an initial range and bearing signal so the
 		// distances don't get thrown off by empty values
 		
+		short int id = std::stoi(GetId());
+	
 		// fill buffer
 		CByteArray cBuf;
 		cBuf << std::stoi(GetId());
-		cBuf << (short int) 10000;
-		cBuf << (short int) 10000;
+		cBuf << (short int) 500;
+		cBuf << (short int) 500;
 		cBuf << (short int) 0;
 		
 		// send signal

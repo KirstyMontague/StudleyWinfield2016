@@ -8,9 +8,18 @@ class CBlackBoard
 {
 	public:
 		CBlackBoard(int numRobots) : 
-			m_motors(0), 
+			m_motors(0),
+			m_scratchpad(0),
+			m_sendSignal(0),
+			m_receivedSignal(0),
 			m_detectedFood(false), 
 			m_carryingFood(false),
+			m_density(0),
+			m_densityChange(0),
+			m_distNest(0),
+			m_distNestChange(0),
+			m_distFood(1),
+			m_distFoodChange(0),
 			m_numRobots(numRobots)
 		{}
 		

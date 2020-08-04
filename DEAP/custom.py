@@ -230,5 +230,24 @@ class customGP():
 					if gp.isclass(term):
 						term = term()
 					expr.append(term)
-						 
+
 		return expr
+
+	def mutNodeReplacement(self, individual, pset):
+
+		if len(individual) < 2:
+			return individual
+
+		index = random.randrange(1, len(individual))
+		node = individual[index]
+
+		if node.arity == 0:  # Terminal
+			term = random.choice(pset.terminals[node.ret])
+			if isclass(term):
+				term = term()
+			individual[index] = term
+		else:  # Primitive
+			prims = [p for p in pset.primitives[node.ret] if p.args == node.args]
+			individual[index] = random.choice(prims)
+
+		return individual,

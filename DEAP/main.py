@@ -17,6 +17,7 @@ from deap import gp
 from params import eaParams
 from custom import customGP
 from utilities import utilities
+from primitives import PrimitiveSetTyped
 
 
 # EA parameters
@@ -24,7 +25,6 @@ from utilities import utilities
 params = eaParams()
 customGP = customGP()
 utilities = utilities()
-
 
 def evaluateRobot(individual):
 	
@@ -80,7 +80,7 @@ def evaluateRobot(individual):
 	return (fitness, )
 
 
-pset = gp.PrimitiveSetTyped("MAIN", [], str)
+pset = PrimitiveSetTyped("MAIN", [], str)
 
 params.addNodes(pset)
 
@@ -100,7 +100,7 @@ toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
 toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 toolbox.register("mutSubtreeShrink", gp.mutShrink)
-toolbox.register("mutNodeReplace", gp.mutNodeReplacement, pset=pset)
+toolbox.register("mutNodeReplace", customGP.mutNodeReplacement, pset=pset)
 toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
 
 

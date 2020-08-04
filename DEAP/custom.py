@@ -186,9 +186,6 @@ class customGP():
 
 	def generate(self, pset, min_, max_, condition, type_=None):
 		
-		# copied verbatim from deap gp module but with an extra clause
-		# allowing terminal types with no corresponding primitive
-		
 		if type_ is None:
 			type_ = pset.ret
 		expr = []
@@ -199,14 +196,20 @@ class customGP():
 			depth, type_ = stack.pop()
 			if condition(height, depth):
 				try:
-					term = random.choice(pset.terminals[type_])
+					term = random.choice(pset.terminals[type_] + pset.conditions[type_] + pset.actions[type_])
 				except IndexError:
-					_, _, traceback = sys.exc_info()
+					_, _, traceback = gp.sys.exc_info()
 					raise IndexError, "The gp.generate function tried to add " \
 											"a terminal of type '%s', but there is " \
 											"none available." % (type_,), traceback
+				
 				if gp.isclass(term):
 					term = term()
+				
+				if term.arity > 0:
+					for arg in reversed(term.args):
+						stack.append((depth + 1, arg))
+				
 				expr.append(term)
 			else:
 				primitiveAvailable = True
@@ -221,14 +224,20 @@ class customGP():
 						stack.append((depth + 1, arg))
 				else:
 					try:
-						term = random.choice(pset.terminals[type_])
+						term = random.choice(pset.terminals[type_] + pset.conditions[type_] + pset.actions[type_])
 					except IndexError:
-						_, _, traceback = sys.exc_info()
+						_, _, traceback = gp.sys.exc_info()
 						raise IndexError, "The gp.generate function tried to add " \
 												"a terminal of type '%s', but there is " \
 												"none available." % (type_,), traceback
+					
 					if gp.isclass(term):
 						term = term()
+					
+					if term.arity > 0:
+						for arg in reversed(term.args):
+							stack.append((depth + 1, arg))
+					
 					expr.append(term)
 
 		return expr
@@ -237,17 +246,45 @@ class customGP():
 
 		if len(individual) < 2:
 			return individual
-
+		
+		# choose existing node at random
 		index = random.randrange(1, len(individual))
 		node = individual[index]
-
-		if node.arity == 0:  # Terminal
-			term = random.choice(pset.terminals[node.ret])
-			if isclass(term):
-				term = term()
-			individual[index] = term
-		else:  # Primitive
-			prims = [p for p in pset.primitives[node.ret] if p.args == node.args]
-			individual[index] = random.choice(prims)
+		type_ = node.ret
+		
+		# make sure we have a real node and not an ephemeral constant
+		count = 0
+		while count < 20 and node not in pset.conditions[type_] + pset.actions[type_]:
+			count += 1
+			index = random.randrange(1, len(individual))
+			node = individual[index]
+			type_ = node.ret
+		
+		if node not in pset.conditions[type_] + pset.actions[type_]:
+			return
+		
+		# choose a replacement node at random
+		prims = [p for p in pset.primitives[node.ret] + pset.conditions[node.ret] + pset.actions[node.ret] if p.children == node.children]
+		prim = random.choice(prims)
+		
+		print "----"
+		print self.utils.printTree(individual)
+		print node.name + " to " + prim.name
+		
+		expr = [(prim)]
+		if prim.arity > 0:
+			for arg in prim.args:
+				term = random.choice(pset.terminals[arg])
+				if gp.isclass(term):
+					term = term()
+				expr.append(term)
+		
+		nodeSlice = individual.searchSubtree(index)
+		individual[nodeSlice] = expr
+		
+		print self.utils.printTree(individual)
+		print "---------"
 
 		return individual,
+
+

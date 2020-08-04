@@ -10,6 +10,8 @@ class PrimitiveSetTyped(object):
 	def __init__(self, name, in_types, ret_type, prefix="ARG"):
 		self.terminals = gp.defaultdict(list)
 		self.primitives = gp.defaultdict(list)
+		self.conditions = gp.defaultdict(list)
+		self.actions = gp.defaultdict(list)
 		self.arguments = []
 		# setting "__builtins__" to None avoid the context
 		# being polluted by builtins function when evaluating
@@ -21,22 +23,6 @@ class PrimitiveSetTyped(object):
 
 		self.name = name
 		self.ret = ret_type
-		self.ins = in_types
-		for i, type_ in enumerate(in_types):
-			arg_str = "{prefix}{index}".format(prefix=prefix, index=i)
-			self.arguments.append(arg_str)
-			term = Terminal(arg_str, True, type_)
-			self._add(term)
-			self.terms_count += 1
-
-	def renameArguments(self, **kargs):
-		for i, old_name in enumerate(self.arguments):
-			if old_name in kargs:
-				new_name = kargs[old_name]
-				self.arguments[i] = new_name
-				self.mapping[new_name] = self.mapping[old_name]
-				self.mapping[new_name].value = new_name
-				del self.mapping[old_name]
 
 	def _add(self, prim):
 		def addType(dict_, ret_type):
@@ -51,15 +37,21 @@ class PrimitiveSetTyped(object):
 
 		addType(self.primitives, prim.ret)
 		addType(self.terminals, prim.ret)
+		addType(self.conditions, prim.ret)
+		addType(self.actions, prim.ret)
 
 		self.mapping[prim.name] = prim
-		if isinstance(prim, Primitive):
+		if isinstance(prim, Primitive) or isinstance(prim, Condition) or isinstance(prim, Action):
 			for type_ in prim.args:
 				addType(self.primitives, type_)
 				addType(self.terminals, type_)
-			dict_ = self.primitives
-		else:
-			dict_ = self.terminals
+				addType(self.conditions, type_)
+				addType(self.actions, type_)
+		
+		if isinstance(prim, Primitive): dict_ = self.primitives
+		elif isinstance(prim, Condition): dict_ = self.conditions
+		elif isinstance(prim, Action): dict_ = self.actions
+		else: dict_ = self.terminals
 
 		for type_ in dict_:
 			if issubclass(prim.ret, type_):
@@ -127,10 +119,37 @@ class PrimitiveSetTyped(object):
 		self._add(class_)
 		self.terms_count += 1
 
-	def addADF(self, adfset):
-		prim = Primitive(adfset.name, adfset.ins, adfset.ret)
+	def addCondition(self, primitive, in_types, ret_type, name=None):
+	 
+		if name is None:
+			name = primitive.__name__
+		prim = Condition(name, in_types, ret_type)
+
+		assert name not in self.context or \
+			self.context[name] is primitive, \
+		"Primitives are required to have a unique name. " \
+		"Consider using the argument 'name' to rename your " \
+		"second '%s' primitive." % (name,)
+
 		self._add(prim)
-		self.prims_count += 1
+		self.context[prim.name] = primitive
+		self.terms_count += 1
+
+	def addAction(self, primitive, in_types, ret_type, name=None):
+	 
+		if name is None:
+			name = primitive.__name__
+		prim = Action(name, in_types, ret_type)
+
+		assert name not in self.context or \
+			self.context[name] is primitive, \
+		"Primitives are required to have a unique name. " \
+		"Consider using the argument 'name' to rename your " \
+		"second '%s' primitive." % (name,)
+
+		self._add(prim)
+		self.context[prim.name] = primitive
+		self.terms_count += 1
 
 	@property
 	def terminalRatio(self):
@@ -140,11 +159,12 @@ class PrimitiveSetTyped(object):
 
 class Primitive(object):
 	
-	__slots__ = ('name', 'arity', 'args', 'ret', 'seq')
+	__slots__ = ('name', 'arity', 'children', 'args', 'ret', 'seq')
 
 	def __init__(self, name, args, ret):
 		self.name = name
 		self.arity = len(args)
+		self.children = args
 		self.args = args
 		self.ret = ret
 		args = ", ".join(map("{{{0}}}".format, range(self.arity)))
@@ -160,13 +180,13 @@ class Primitive(object):
 		else:
 			return NotImplemented
 
-
 class Terminal(object):
 	
-	__slots__ = ('name', 'value', 'ret', 'conv_fct')
+	__slots__ = ('name', 'children', 'value', 'ret', 'conv_fct')
 
 	def __init__(self, terminal, symbolic, ret):
 		self.ret = ret
+		self.children = []
 		self.value = terminal
 		self.name = str(terminal)
 		self.conv_fct = str if symbolic else repr
@@ -185,7 +205,6 @@ class Terminal(object):
 		else:
 			return NotImplemented
 
-
 class Ephemeral(Terminal):
 
 	def __init__(self):
@@ -194,3 +213,55 @@ class Ephemeral(Terminal):
 	@staticmethod
 	def func():
 		raise NotImplementedError
+
+
+
+class Condition(object):
+	
+	__slots__ = ('name', 'arity', 'children', 'args', 'ret', 'seq')
+
+	def __init__(self, name, args, ret):
+		self.name = name
+		self.arity = len(args)
+		self.children = []
+		self.args = args
+		self.ret = ret
+		args = ", ".join(map("{{{0}}}".format, range(self.arity)))
+		self.seq = "{name}({args})".format(name=self.name, args=args)
+
+	def format(self, *args):
+		return self.seq.format(*args)
+
+	def __eq__(self, other):
+		if type(self) is type(other):
+			return all(getattr(self, slot) == getattr(other, slot)
+						  for slot in self.__slots__)
+		else:
+			return NotImplemented
+
+class Action(object):
+	
+	__slots__ = ('name', 'arity', 'children', 'args', 'ret', 'seq')
+
+	def __init__(self, name, args, ret):
+		self.name = name
+		self.arity = len(args)
+		self.children = []
+		self.args = args
+		self.ret = ret
+		args = ", ".join(map("{{{0}}}".format, range(self.arity)))
+		if self.arity > 0:
+			self.seq = "{name}({args})".format(name=self.name, args=args)
+		else:
+			self.seq = "{name}".format(name=self.name)
+
+	def format(self, *args):
+		return self.seq.format(*args)
+
+	def __eq__(self, other):
+		if type(self) is type(other):
+			return all(getattr(self, slot) == getattr(other, slot)
+						  for slot in self.__slots__)
+		else:
+			return NotImplemented
+

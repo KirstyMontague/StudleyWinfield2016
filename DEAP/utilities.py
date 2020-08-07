@@ -4,8 +4,6 @@ import os
 import subprocess
 from params import eaParams
 
-# from params import eaParams
-
 class utilities():
 	
 	params = eaParams()

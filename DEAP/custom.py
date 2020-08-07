@@ -214,7 +214,7 @@ class customGP():
 			else:
 				primitiveAvailable = True
 				try:
-					prim = random.choice(pset.primitives[type_])
+					prim = random.choice(pset.primitives[type_] + pset.decorators[type_])
 				except IndexError:
 					primitiveAvailable = False
 						 
@@ -242,48 +242,94 @@ class customGP():
 
 		return expr
 
-	def mutNodeReplacement(self, individual, pset):
+	def mutGenerate(self, pset, node):
+		
+		expr = [(node)]
+		stack = []
+		
+		if node.arity > 0:
+			for arg in reversed(node.args):
+				stack.append((arg))
+		
+		while len(stack) != 0:
+			type_ = stack.pop()
+			try:
+				term = random.choice(pset.terminals[type_])
+			except IndexError:
+				_, _, traceback = gp.sys.exc_info()
+				raise IndexError, "The gp.generate function tried to add " \
+										"a terminal of type '%s', but there is " \
+										"none available." % (type_,), traceback
+			
+			if gp.isclass(term):
+				term = term()
+			
+			expr.append(term)
+			
+		return expr
 
+	def mutNodeReplacement(self, individual, pset):
+		
 		if len(individual) < 2:
 			return individual
 		
 		# choose existing node at random
-		index = random.randrange(1, len(individual))
+		index = random.randrange(0, len(individual))
 		node = individual[index]
 		type_ = node.ret
 		
 		# make sure we have a real node and not an ephemeral constant
 		count = 0
-		while count < 20 and node not in pset.conditions[type_] + pset.actions[type_]:
+		while count < 20 and node not in pset.primitives[type_]+ pset.decorators[type_] + pset.conditions[type_] + pset.actions[type_]:
 			count += 1
-			index = random.randrange(1, len(individual))
+			index = random.randrange(0, len(individual))
 			node = individual[index]
 			type_ = node.ret
 		
-		if node not in pset.conditions[type_] + pset.actions[type_]:
-			return
+		if node not in pset.primitives[type_] + pset.decorators[type_] + pset.conditions[type_] + pset.actions[type_]:
+			return individual,
 		
 		# choose a replacement node at random
-		prims = [p for p in pset.primitives[node.ret] + pset.conditions[node.ret] + pset.actions[node.ret] if p.children == node.children]
+		newlist = []
+		if node in pset.primitives[type_] + pset.decorators[node.ret]:
+			newList = pset.primitives[node.ret] + pset.decorators[node.ret]
+		else:
+			newList = pset.conditions[node.ret] + pset.actions[node.ret]
+		prims = [p for p in newList if p.children == node.children]
 		prim = random.choice(prims)
 		
+		# print original individual and intended mutation
 		print "----"
 		print self.utils.printTree(individual)
 		print node.name + " to " + prim.name
 		
+		# replace the selected node with one of the new type
 		expr = [(prim)]
 		if prim.arity > 0:
 			for arg in prim.args:
-				term = random.choice(pset.terminals[arg])
-				if gp.isclass(term):
-					term = term()
-				expr.append(term)
+				if arg not in prim.children:
+					# this argument is a constant so generate a new one
+					term = random.choice(pset.terminals[arg])
+					if gp.isclass(term):
+						term = term()
+					expr.append(term)
+				else:
+					# this agument is a child node so keep it intact
+					nodeSlice = individual.searchSubtree(index + len(expr))
+					expr = expr + individual[nodeSlice]
+			
+			# replace node and subtree with new expression
+			nodeSlice = individual.searchSubtree(index)
+			exprSlice = slice(0, len(expr))
+			individual[nodeSlice] = expr[exprSlice]
+		else:
+			# replace node with new primitive
+			nodeSlice = individual.searchSubtree(index)
+			primSlice = slice(0, 1)
+			individual[nodeSlice] = [(prim)][primSlice]
 		
-		nodeSlice = individual.searchSubtree(index)
-		individual[nodeSlice] = expr
-		
+		# print new individual
 		print self.utils.printTree(individual)
-		print "---------"
 
 		return individual,
 

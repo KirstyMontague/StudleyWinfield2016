@@ -118,11 +118,11 @@ CNode::CNode(std::vector<std::string>& chromosome) : m_ptr(0)
 				
 				m_type = nodetype::repeat;
 				
-				m_children.push_back(new CNode(chromosome.at(0)));
-				chromosome.erase(chromosome.begin());
 				
 				m_children.push_back(new CNode(chromosome));
 				
+				m_children.push_back(new CNode(chromosome.at(0)));
+				chromosome.erase(chromosome.begin());
 				break;
 				
 				m_type = nodetype::repeat;
@@ -321,22 +321,28 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 		
 		case CNode::nodetype::repeat:
 		{
-			output += "repeat" + std::to_string(m_children[0]->getData()) + " ";
 			
-			float iterations = m_children[0]->getData();
-			int count = 0;
+			output += "repeat " + std::to_string(m_ptr) + "/" + std::to_string((int) m_children[1]->getData()) + " ";
 			
-			while (count < iterations)
+			std::string result = m_children[0]->evaluate(blackBoard, output);
+			if (result == "failure")
 			{
-				count++;
-				std::string result = m_children[1]->evaluate(blackBoard, output);
-				if (result != "success")
-				{
-					return result;
-				}
+				m_ptr = 0;
+				return "failure";
 			}
-			
-			return "success";
+			else if (result == "success" && m_ptr >= m_children[1]->getData())
+			{
+				m_ptr = 0;
+				return "success";
+			}
+			else
+			{
+				if (result == "success")
+				{
+					m_ptr++;
+				}
+				return "running";
+			}
 		}
 		
 		case CNode::nodetype::successd:

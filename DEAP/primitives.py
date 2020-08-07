@@ -10,6 +10,7 @@ class PrimitiveSetTyped(object):
 	def __init__(self, name, in_types, ret_type, prefix="ARG"):
 		self.terminals = gp.defaultdict(list)
 		self.primitives = gp.defaultdict(list)
+		self.decorators = gp.defaultdict(list)
 		self.conditions = gp.defaultdict(list)
 		self.actions = gp.defaultdict(list)
 		self.arguments = []
@@ -37,18 +38,21 @@ class PrimitiveSetTyped(object):
 
 		addType(self.primitives, prim.ret)
 		addType(self.terminals, prim.ret)
+		addType(self.decorators, prim.ret)
 		addType(self.conditions, prim.ret)
 		addType(self.actions, prim.ret)
 
 		self.mapping[prim.name] = prim
-		if isinstance(prim, Primitive) or isinstance(prim, Condition) or isinstance(prim, Action):
+		if isinstance(prim, Primitive) or isinstance(prim, Decorator) or isinstance(prim, Condition) or isinstance(prim, Action):
 			for type_ in prim.args:
 				addType(self.primitives, type_)
 				addType(self.terminals, type_)
+				addType(self.decorators, type_)
 				addType(self.conditions, type_)
 				addType(self.actions, type_)
 		
 		if isinstance(prim, Primitive): dict_ = self.primitives
+		elif isinstance(prim, Decorator): dict_ = self.decorators
 		elif isinstance(prim, Condition): dict_ = self.conditions
 		elif isinstance(prim, Action): dict_ = self.actions
 		else: dict_ = self.terminals
@@ -119,6 +123,22 @@ class PrimitiveSetTyped(object):
 		self._add(class_)
 		self.terms_count += 1
 
+	def addDecorator(self, primitive, in_types, children, ret_type, name=None):
+	 
+		if name is None:
+			name = primitive.__name__
+		prim = Decorator(name, in_types, children, ret_type)
+
+		assert name not in self.context or \
+			self.context[name] is primitive, \
+		"Primitives are required to have a unique name. " \
+		"Consider using the argument 'name' to rename your " \
+		"second '%s' primitive." % (name,)
+
+		self._add(prim)
+		self.context[prim.name] = primitive
+		self.prims_count += 1
+
 	def addCondition(self, primitive, in_types, ret_type, name=None):
 	 
 		if name is None:
@@ -159,7 +179,7 @@ class PrimitiveSetTyped(object):
 
 class Primitive(object):
 	
-	__slots__ = ('name', 'arity', 'children', 'args', 'ret', 'seq')
+	__slots__ = ('name', 'arity', 'args', 'children', 'ret', 'seq')
 
 	def __init__(self, name, args, ret):
 		self.name = name
@@ -216,9 +236,32 @@ class Ephemeral(Terminal):
 
 
 
+class Decorator(object):
+	
+	__slots__ = ('name', 'arity', 'args', 'children', 'ret', 'seq')
+
+	def __init__(self, name, args, children, ret):
+		self.name = name
+		self.arity = len(args + children)
+		self.children = children
+		self.args = children + args
+		self.ret = ret
+		args = ", ".join(map("{{{0}}}".format, range(self.arity)))
+		self.seq = "{name}({args})".format(name=self.name, args=args)
+
+	def format(self, *args):
+		return self.seq.format(*args)
+
+	def __eq__(self, other):
+		if type(self) is type(other):
+			return all(getattr(self, slot) == getattr(other, slot)
+						  for slot in self.__slots__)
+		else:
+			return NotImplemented
+
 class Condition(object):
 	
-	__slots__ = ('name', 'arity', 'children', 'args', 'ret', 'seq')
+	__slots__ = ('name', 'arity', 'args', 'children', 'ret', 'seq')
 
 	def __init__(self, name, args, ret):
 		self.name = name

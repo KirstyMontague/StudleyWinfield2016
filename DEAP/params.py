@@ -4,20 +4,20 @@ import random
 
 class eaParams():
 	
-	deapSeed = 1;
+	deapSeed = 15;
 	sqrtRobots = 3;
 	iterations = 2;
-	populationSize = 10;
+	populationSize = 25;
 	tournamentSize = 3;
 	eliteSize = 3;
-	generations = 2;
+	generations = 10;
 	maxFood = 8;
 
-	crossoverProbability = 0;
-	mutSRProbability = 0; 		# mutUniform
-	mutSSProbability = 0;  		# mutShrink
-	mutNRProbability = 1;  		# mutNodeReplacement
-	mutECRProbability = 0; 		# mutEphemeral
+	crossoverProbability = 0.8;
+	mutSRProbability = 0.05; 		# mutUniform
+	mutSSProbability = 0.1;  		# mutShrink
+	mutNRProbability = 0.5;  		# mutNodeReplacement
+	mutECRProbability = 0.5; 		# mutEphemeral
 	
 	genSleep = 10
 	evalSleep = 5
@@ -27,31 +27,31 @@ class eaParams():
 	def __init__(self):
 		self.genSleep = self.populationSize / 2
 		self.evalSleep = (self.sqrtRobots * self.sqrtRobots * self.iterations) / 9
-		self.genSleep = 0
-		self.evalSleep = 0
+		# self.genSleep = 0
+		# self.evalSleep = 0
 		self.nodes = {
 			"selm2" : True,
-			"selm3" : False,
-			"selm4" : False,
+			"selm3" : True,
+			"selm4" : True,
 			"seqm2" : True,
-			"seqm3" : False,
-			"seqm4" : False,
-			"probm2" : False,
-			"probm3" : False,
-			"probm4" : False,
-			"repeat" : False,
-			"successd" : False,
-			"failured" : False,
-			"ifltvar" : False,
-			"ifltcon" : False,
-			"ifgevar" : False,
-			"ifgecon" : False,
+			"seqm3" : True,
+			"seqm4" : True,
+			"probm2" : True,
+			"probm3" : True,
+			"probm4" : True,
+			"repeat" : True,
+			"successd" : True,
+			"failured" : True,
+			"ifltvar" : True,
+			"ifltcon" : True,
+			"ifgevar" : True,
+			"ifgecon" : True,
 			"mf" : True,
 			"mr" : True,
 			"ml" : True,
 			"set" : True,
-			"successl" : False,
-			"failurel" : False
+			"successl" : True,
+			"failurel" : True
 		}
 
 	def addNodes(self, pset):
@@ -68,35 +68,26 @@ class eaParams():
 		if (self.nodes['seqm4']): pset.addPrimitive(robot.seqm4, [str, str, str, str],  str)
 		if (self.nodes['probm4']): pset.addPrimitive(robot.probm4, [str, str, str, str],  str)
 
-		if (self.nodes['successd']): pset.addPrimitive(robot.successd, [str],  str)
-		if (self.nodes['failured']): pset.addPrimitive(robot.failured, [str],  str)
+		if (self.nodes['successd']): pset.addDecorator(robot.successd, [], [str],  str)
+		if (self.nodes['failured']): pset.addDecorator(robot.failured, [], [str],  str)
+		if (self.nodes['repeat']): pset.addDecorator(robot.repeat, [repetitionsConstant], [str],  str)
 
-		if (self.nodes['repeat']):
-			pset.addPrimitive(robot.repeat, [repetitionsConstant, str],  str)
-			pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitionsConstant)
-
-		if (self.nodes['ifltvar']): pset.addPrimitive(robot.ifltvar, [bbReadIndex, bbReadIndex], str)
-		if (self.nodes['ifltcon']): pset.addPrimitive(robot.ifltcon, [bbReadIndex, float], str)
-		if (self.nodes['ifgevar']): pset.addPrimitive(robot.ifgevar, [bbReadIndex, bbReadIndex], str)
-		if (self.nodes['ifgecon']): pset.addPrimitive(robot.ifgecon, [bbReadIndex, float], str)
-
-		if (self.nodes['ifltvar'] or self.nodes['ifltcon'] or self.nodes['ifgevar'] or self.nodes['ifgecon']):
-			pset.addEphemeralConstant("bbReadIndex", lambda: random.randint(1,9), bbReadIndex)
+		if (self.nodes['ifltvar']): pset.addCondition(robot.ifltvar, [bbReadIndex, bbReadIndex], str)
+		if (self.nodes['ifltcon']): pset.addCondition(robot.ifltcon, [bbReadIndex, float], str)
+		if (self.nodes['ifgevar']): pset.addCondition(robot.ifgevar, [bbReadIndex, bbReadIndex], str)
+		if (self.nodes['ifgecon']): pset.addCondition(robot.ifgecon, [bbReadIndex, float], str)
 
 		if (self.nodes['mf']): pset.addAction(robot.mf, [], str)
 		if (self.nodes['ml']): pset.addAction(robot.ml, [], str)
 		if (self.nodes['mr']): pset.addAction(robot.mr, [], str)
+		if (self.nodes['successl']): pset.addAction(robot.successl, [], str)
+		if (self.nodes['failurel']): pset.addAction(robot.failurel, [], str)
+		if (self.nodes['set']): pset.addAction(robot.set, [bbWriteIndex, float], str)
 
-		if (self.nodes['successl']): pset.addTerminal(robot.successl, str)
-		if (self.nodes['failurel']): pset.addTerminal(robot.failurel, str)
-
-		if (self.nodes['set']):
-			pset.addCondition(robot.set, [bbWriteIndex, float], str)
-			pset.addEphemeralConstant("bbWriteIndex", lambda: random.randint(1,2), bbWriteIndex)
-
-		if (self.nodes['set'] or self.nodes['ifltcon'] or self.nodes['ifgecon']):
-			pset.addEphemeralConstant("bbConstant", lambda: random.uniform(-1, 1), float)
-
+		pset.addEphemeralConstant("bbWriteIndex", lambda: random.randint(1,2), bbWriteIndex)
+		pset.addEphemeralConstant("bbReadIndex", lambda: random.randint(1,9), bbReadIndex)
+		pset.addEphemeralConstant("bbConstant", lambda: random.uniform(-1, 1), float)
+		pset.addEphemeralConstant("repetitions", lambda: random.randint(1,9), repetitionsConstant)
 
 class robotObject(object):
 

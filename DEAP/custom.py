@@ -7,6 +7,10 @@ from deap import tools
 
 from params import eaParams
 from utilities import utilities
+from primitives import Primitive
+from primitives import Decorator
+from primitives import Action
+from primitives import Condition
 
 class customGP():
 	
@@ -183,7 +187,6 @@ class customGP():
 			return depth == height
 		return self.generate(pset, min_, max_, condition, type_)
 
-
 	def generate(self, pset, min_, max_, condition, type_=None):
 		
 		if type_ is None:
@@ -271,7 +274,7 @@ class customGP():
 	def mutNodeReplacement(self, individual, pset):
 		
 		if len(individual) < 2:
-			return individual
+			return individual,
 		
 		# choose existing node at random
 		index = random.randrange(0, len(individual))
@@ -291,7 +294,7 @@ class customGP():
 		
 		# choose a replacement node at random
 		newlist = []
-		if node in pset.primitives[type_] + pset.decorators[node.ret]:
+		if node in pset.primitives[node.ret] + pset.decorators[node.ret]:
 			newList = pset.primitives[node.ret] + pset.decorators[node.ret]
 		else:
 			newList = pset.conditions[node.ret] + pset.actions[node.ret]
@@ -333,4 +336,58 @@ class customGP():
 
 		return individual,
 
+	def mutShrink(individual):
+
+		if len(individual) < 3 or individual.height <= 1:
+			return individual,
+
+		iprims = []
+		for i, node in enumerate(individual[1:], 1):
+			if isinstance(node, Primitive) and node.ret in node.args:
+				iprims.append((i, node))
+
+		if len(iprims) != 0:
+			index, prim = random.choice(iprims)
+			arg_idx = random.choice([i for i, type_ in enumerate(prim.args) if type_ == prim.ret])
+			rindex = index + 1
+			for _ in range(arg_idx + 1):
+				rslice = individual.searchSubtree(rindex)
+				subtree = individual[rslice]
+				rindex += len(subtree)
+
+			slice_ = individual.searchSubtree(index)
+			individual[slice_] = subtree
+
+		return individual,
+
+	def cxOnePoint(ind1, ind2):
+
+		if len(ind1) < 2 or len(ind2) < 2:
+			return ind1, ind2
+
+		types1 = defaultdict(list)
+		types2 = defaultdict(list)
+		if ind1.root.ret == __type__:
+			# Not STGP optimization
+			types1[__type__] = xrange(1, len(ind1))
+			types2[__type__] = xrange(1, len(ind2))
+			common_types = [__type__]
+		else:
+			for idx, node in enumerate(ind1[1:], 1):
+				types1[node.ret].append(idx)
+			for idx, node in enumerate(ind2[1:], 1):
+				types2[node.ret].append(idx)
+			common_types = set(types1.keys()).intersection(set(types2.keys()))
+
+		if len(common_types) > 0:
+			type_ = random.choice(list(common_types))
+
+			index1 = random.choice(types1[type_])
+			index2 = random.choice(types2[type_])
+
+			slice1 = ind1.searchSubtree(index1)
+			slice2 = ind2.searchSubtree(index2)
+			ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
+
+		return ind1, ind2
 

@@ -80,28 +80,57 @@ def evaluateRobot(individual):
 	return (fitness, )
 
 
-pset = PrimitiveSetTyped("MAIN", [], str)
 
-params.addNodes(pset)
-
-creator.create("Fitness", base.Fitness, weights=(1.0,))
-creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness)
 
 toolbox = base.Toolbox()
 
-toolbox.register("expr_init", customGP.genFull, pset=pset, min_=1, max_=4)
+experiment = "original"
 
-toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+if experiment == "original":
 
-toolbox.register("evaluate", evaluateRobot)
-toolbox.register("select", customGP.selTournament, tournsize=params.tournamentSize)
-toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
-toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
-toolbox.register("mutSubtreeShrink", gp.mutShrink)
-toolbox.register("mutNodeReplace", customGP.mutNodeReplacement, pset=pset)
-toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
+	pset = gp.PrimitiveSetTyped("MAIN", [], str)
+	params.addNodes(pset)
+
+	creator.create("Fitness", base.Fitness, weights=(1.0,))
+	creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness)
+
+	toolbox.register("expr_init", customGP.genFull, pset=pset, min_=1, max_=4)
+
+	toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
+	toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+	toolbox.register("evaluate", evaluateRobot)
+	toolbox.register("select", customGP.selTournament, tournsize=params.tournamentSize)
+
+	toolbox.register("mate", gp.cxOnePoint)
+	toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
+	toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+	toolbox.register("mutSubtreeShrink", gp.mutShrink)
+	toolbox.register("mutNodeReplace", gp.mutNodeReplacement, pset=pset)
+	toolbox.register("mutConstantReplace", mutEphemeral, mode="one")
+
+if experiment == "bt":
+
+	pset = PrimitiveSetTyped("MAIN", [], str)
+	params.addNodes(pset)
+
+	creator.create("Fitness", base.Fitness, weights=(1.0,))
+	creator.create("Individual", gp.PrimitiveTree, fitness=creator.Fitness)
+
+	toolbox.register("expr_init", customGP.genFull, pset=pset, min_=1, max_=4)
+
+	toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
+	toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+	toolbox.register("evaluate", evaluateRobot)
+	toolbox.register("select", customGP.selTournament, tournsize=params.tournamentSize)
+
+	toolbox.register("mate", customGP.cxOnePoint)
+	toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
+	toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+	toolbox.register("mutSubtreeShrink", customGP.mutShrinkToChild, pset=pset)
+	toolbox.register("mutNodeReplace", customGP.mutNodeReplacement, pset=pset)
+	toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
 
 
 

@@ -336,14 +336,14 @@ class customGP():
 
 		return individual,
 
-	def mutShrink(individual):
+	def mutShrinkToChild(self, individual, pset):
 
 		if len(individual) < 3 or individual.height <= 1:
 			return individual,
 
 		iprims = []
 		for i, node in enumerate(individual[1:], 1):
-			if isinstance(node, Primitive) and node.ret in node.args:
+			if (node in pset.primitives[node.ret] + pset.decorators[node.ret]) and node.ret in node.args:
 				iprims.append((i, node))
 
 		if len(iprims) != 0:
@@ -360,34 +360,47 @@ class customGP():
 
 		return individual,
 
-	def cxOnePoint(ind1, ind2):
+	def mutShrinkToTerminal(self, individual, pset):
+
+		if len(individual) < 3 or individual.height <= 1:
+			return individual,
+
+		iprims = []
+		for i, node in enumerate(individual[1:], 1):
+			if (node in pset.primitives[node.ret] + pset.decorators[node.ret]) and node.ret in node.args:
+				iprims.append((i, node))
+
+		if len(iprims) != 0:
+			primIndex, prim = random.choice(iprims)
+			primSlice = individual.searchSubtree(primIndex)
+
+			iterms = []
+			for i, node in enumerate(individual[primSlice], 1):
+				if node in pset.actions[prim.ret] + pset.conditions[prim.ret]:
+					iterms.append((i, node))
+
+			termIndex, term = random.choice(iterms)
+			termIndex += primIndex
+			termSlice = individual.searchSubtree(termIndex - 1)
+			subtree = individual[termSlice]
+
+			primSlice = individual.searchSubtree(primIndex)
+			individual[primSlice] = subtree
+
+		return individual,
+
+	def cxOnePoint(self, ind1, ind2):
 
 		if len(ind1) < 2 or len(ind2) < 2:
 			return ind1, ind2
 
-		types1 = defaultdict(list)
-		types2 = defaultdict(list)
-		if ind1.root.ret == __type__:
-			# Not STGP optimization
-			types1[__type__] = xrange(1, len(ind1))
-			types2[__type__] = xrange(1, len(ind2))
-			common_types = [__type__]
-		else:
-			for idx, node in enumerate(ind1[1:], 1):
-				types1[node.ret].append(idx)
-			for idx, node in enumerate(ind2[1:], 1):
-				types2[node.ret].append(idx)
-			common_types = set(types1.keys()).intersection(set(types2.keys()))
+		type_ = ind1.root.ret
+		index1 = random.choice([i for i, node in enumerate(ind1[1:], 1) if node.ret == type_])
+		index2 = random.choice([i for i, node in enumerate(ind2[1:], 1) if node.ret == type_])
 
-		if len(common_types) > 0:
-			type_ = random.choice(list(common_types))
-
-			index1 = random.choice(types1[type_])
-			index2 = random.choice(types2[type_])
-
-			slice1 = ind1.searchSubtree(index1)
-			slice2 = ind2.searchSubtree(index2)
-			ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
+		slice1 = ind1.searchSubtree(index1)
+		slice2 = ind2.searchSubtree(index2)
+		ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
 
 		return ind1, ind2
 

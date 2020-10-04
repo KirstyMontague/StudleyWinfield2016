@@ -11,6 +11,7 @@ from primitives import Primitive
 from primitives import Decorator
 from primitives import Action
 from primitives import Condition
+from primitives import Ephemeral
 
 class customGP():
 	
@@ -199,6 +200,7 @@ class customGP():
 			depth, type_ = stack.pop()
 			if condition(height, depth):
 				try:
+					# term = random.choice(pset.terminals[type_])
 					term = random.choice(pset.terminals[type_] + pset.conditions[type_] + pset.actions[type_])
 				except IndexError:
 					_, _, traceback = gp.sys.exc_info()
@@ -217,6 +219,7 @@ class customGP():
 			else:
 				primitiveAvailable = True
 				try:
+					# prim = random.choice(pset.primitives[type_])
 					prim = random.choice(pset.primitives[type_] + pset.decorators[type_])
 				except IndexError:
 					primitiveAvailable = False
@@ -227,6 +230,7 @@ class customGP():
 						stack.append((depth + 1, arg))
 				else:
 					try:
+						# term = random.choice(pset.terminals[type_])
 						term = random.choice(pset.terminals[type_] + pset.conditions[type_] + pset.actions[type_])
 					except IndexError:
 						_, _, traceback = gp.sys.exc_info()
@@ -403,4 +407,192 @@ class customGP():
 		ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
 
 		return ind1, ind2
+
+
+
+
+	def mutEphemeral(self, individual, pset):
+
+		ephemerals_idx = [index
+								for index, node in enumerate(individual)
+								if isinstance(node, Ephemeral)]
+
+		if len(ephemerals_idx) > 0:
+			ephemerals_idx = (random.choice(ephemerals_idx),)
+			for i in ephemerals_idx:
+				if type(individual[i]) in pset.bbReadIndexes or type(individual[i]) in pset.bbWriteIndexes:
+					individual[i] = type(individual[i])()
+				elif type(individual[i]) in pset.repetitions:
+					print "=========================== reps ==========================="
+					print individual
+					
+					magnitude = 0
+					if random.random() < .33: magnitude = 2
+					else: magnitude = 1
+					
+					direction = 0;
+					if random.random() < .5: direction = -1
+					else: direction = 1
+					
+					newValue = individual[i].value + (magnitude * direction)
+					if newValue > 9: newValue = 9
+					elif newValue < 1: newValue = 1
+					
+					print newValue
+					individual[i].value = newValue
+					print individual
+					print ""
+				else:
+					print "=========================== constant ==========================="
+					print individual
+					print individual[i].value
+					newValue = self.utils.gaussian(individual[i].value, .05)
+					print newValue
+					individual[i].value = newValue
+					print individual
+					print ""
+		
+		return individual,
+
+	def mutUniformInner(self, individual, expr, pset):
+		
+		type_ = individual.root.ret
+		
+		if random.random() < 0.9:
+			psets = pset.decorators[type_] + pset.primitives[type_]
+		else:
+			psets = pset.actions[type_] + pset.conditions[type_]
+		
+		nodeSet = [i for i, node in enumerate(individual[1:], 1) if node in psets]
+		
+		if (len(nodeSet) > 0): index = random.choice(nodeSet)
+		else: index = random.choice([i for i, node in enumerate(individual[1:], 1) if node.ret == type_])
+		
+		print individual
+		print index
+		print individual[index].name
+		
+		slice_ = individual.searchSubtree(index)
+		type_ = individual[index].ret
+		individual[slice_] = expr(pset=pset, type_=type_)
+		
+		print individual
+		print ""
+		
+		return individual,
+
+	def mutNodeReplacementInner(self, individual, pset):
+		
+		if len(individual) < 2:
+			return individual,
+		
+		# choose existing node at random
+		type_ = individual.root.ret
+		
+		if random.random() < 0.9:
+			psets = pset.decorators[type_] + pset.primitives[type_]
+		else:
+			psets = pset.actions[type_] + pset.conditions[type_]
+		
+		nodeSet = [i for i, node in enumerate(individual[1:], 1) if node in psets]
+		
+		if (len(nodeSet) > 0): index = random.choice(nodeSet)
+		else: index = random.choice([i for i, node in enumerate(individual[1:], 1) if node.ret == type_])
+		
+		node = individual[index]
+		
+		print individual
+		print index
+		print individual[index].name
+		
+		# make sure we have a real node and not an ephemeral constant
+		count = 0
+		while count < 20 and node not in pset.primitives[type_]+ pset.decorators[type_] + pset.conditions[type_] + pset.actions[type_]:
+			count += 1
+			index = random.randrange(0, len(individual))
+			node = individual[index]
+			type_ = node.ret
+		
+		if node not in pset.primitives[type_] + pset.decorators[type_] + pset.conditions[type_] + pset.actions[type_]:
+			return individual,
+		
+		# choose a replacement node at random
+		newlist = []
+		if node in pset.primitives[node.ret] + pset.decorators[node.ret]:
+			newList = pset.primitives[node.ret] + pset.decorators[node.ret]
+		else:
+			newList = pset.conditions[node.ret] + pset.actions[node.ret]
+		prims = [p for p in newList if p.children == node.children]
+		prim = random.choice(prims)
+		
+		# replace the selected node with one of the new type
+		expr = [(prim)]
+		if prim.arity > 0:
+			for arg in prim.args:
+				if arg not in prim.children:
+					# this argument is a constant so generate a new one
+					term = random.choice(pset.terminals[arg])
+					if gp.isclass(term):
+						term = term()
+					expr.append(term)
+				else:
+					# this agument is a child node so keep it intact
+					nodeSlice = individual.searchSubtree(index + len(expr))
+					expr = expr + individual[nodeSlice]
+			
+			# replace node and subtree with new expression
+			nodeSlice = individual.searchSubtree(index)
+			exprSlice = slice(0, len(expr))
+			individual[nodeSlice] = expr[exprSlice]
+		else:
+			# replace node with new primitive
+			nodeSlice = individual.searchSubtree(index)
+			primSlice = slice(0, 1)
+			individual[nodeSlice] = [(prim)][primSlice]
+		
+		print individual
+		print ""
+		
+		return individual,
+
+	def cxOnePointInner(self, ind1, ind2, pset):
+
+		if len(ind1) < 2 or len(ind2) < 2:
+			return ind1, ind2
+
+		print self.utils.printTree(ind1)
+		print self.utils.printTree(ind2)
+		type_ = ind1.root.ret
+		
+		if random.random() < 0.9:
+			psets = pset.decorators[type_] + pset.primitives[type_]
+		else:
+			psets = pset.actions[type_] + pset.conditions[type_]
+			
+		set1 = [i for i, node in enumerate(ind1[1:], 1) if node in psets]
+		set2 = [i for i, node in enumerate(ind2[1:], 1) if node in psets]
+		
+		print set1
+		print set2
+		
+		if (len(set1) > 0): index1 = random.choice(set1)
+		else: index1 = random.choice([i for i, node in enumerate(ind1[1:], 1) if node.ret == type_])
+		
+		if (len(set2) > 0): index2 = random.choice(set2)
+		else: index2 = random.choice([i for i, node in enumerate(ind2[1:], 1) if node.ret == type_])
+
+		print ind1[index1].name
+		print ind2[index2].name
+		
+		slice1 = ind1.searchSubtree(index1)
+		slice2 = ind2.searchSubtree(index2)
+		ind1[slice1], ind2[slice2] = ind2[slice2], ind1[slice1]
+
+		print self.utils.printTree(ind1)
+		print self.utils.printTree(ind2)
+		print ""
+		
+		return ind1, ind2
+
+
 

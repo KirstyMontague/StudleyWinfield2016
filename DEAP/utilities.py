@@ -4,9 +4,13 @@ import os
 import subprocess
 from params import eaParams
 
+import numpy
+from numpy import random
+
 class utilities():
 	
 	params = eaParams()
+	numpy.random.seed(0)
 	
 	def getBest(self, population):	
 		
@@ -49,7 +53,7 @@ class utilities():
 		logString += str(self.params.tournamentSize)+", "
 		logString += str(self.params.eliteSize)+", "
 		logString += str(gen)+", "
-		logString += str("%.2f" % best.fitness.values[0])+", "
+		logString += str("%.4f" % best.fitness.values[0])+", "
 		logString += "\""+self.printTree(best)+"\", "
 		
 		logString += "\""
@@ -111,3 +115,17 @@ class utilities():
 				stack[-1][1].append(string)
 
 		return string
+
+	def gaussian(self, num, stdDev):
+		
+		magnitude = num * num
+		magnitude = magnitude**(.5)
+		magnitude = magnitude/10
+		x = random.normal(loc=num, scale=magnitude)
+		print x
+		if (x < -1): x = -1 + (x - -1)
+		if (x > 1): x = 1 - (x - 1)
+		
+		return x
+
+

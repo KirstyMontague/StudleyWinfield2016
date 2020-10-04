@@ -13,6 +13,13 @@ class PrimitiveSetTyped(object):
 		self.decorators = gp.defaultdict(list)
 		self.conditions = gp.defaultdict(list)
 		self.actions = gp.defaultdict(list)
+		
+		self.bbReadIndexes = []
+		self.bbWriteIndexes = []
+		self.repetitions = []
+		self.bbConstants = []
+		self.constants = []
+		
 		self.arguments = []
 		# setting "__builtins__" to None avoid the context
 		# being polluted by builtins function when evaluating
@@ -101,7 +108,7 @@ class PrimitiveSetTyped(object):
 		self.terms_count += 1
 
 	def addEphemeralConstant(self, name, ephemeral, ret_type):
-	 
+		
 		module_gp = globals()
 		if name not in module_gp:
 			class_ = type(name, (Ephemeral,), {'func': staticmethod(ephemeral),
@@ -120,6 +127,15 @@ class PrimitiveSetTyped(object):
 				raise Exception("Ephemerals should be named differently "
 								   "than classes defined in the gp module.")
 
+		if name == "bbReadIndex":
+			self.bbReadIndexes.append(class_)
+		if name == "bbWriteIndex":
+			self.bbWriteIndexes.append(class_)
+		if name == "repetitions":
+			self.repetitions.append(class_)
+		if name == "bbConstant":
+			self.bbConstants.append(class_)
+			
 		self._add(class_)
 		self.terms_count += 1
 

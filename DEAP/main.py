@@ -20,6 +20,7 @@ from utilities import utilities
 from primitives import PrimitiveSetTyped
 
 
+
 # EA parameters
 
 params = eaParams()
@@ -84,7 +85,7 @@ def evaluateRobot(individual):
 
 toolbox = base.Toolbox()
 
-experiment = "original"
+experiment = "bt"
 
 if experiment == "original":
 
@@ -107,7 +108,7 @@ if experiment == "original":
 	toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 	toolbox.register("mutSubtreeShrink", gp.mutShrink)
 	toolbox.register("mutNodeReplace", gp.mutNodeReplacement, pset=pset)
-	toolbox.register("mutConstantReplace", mutEphemeral, mode="one")
+	toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
 
 if experiment == "bt":
 
@@ -131,6 +132,30 @@ if experiment == "bt":
 	toolbox.register("mutSubtreeShrink", customGP.mutShrinkToChild, pset=pset)
 	toolbox.register("mutNodeReplace", customGP.mutNodeReplacement, pset=pset)
 	toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
+
+if experiment == "weighted":
+	
+	# toolbox.register("mate", customGP.cxOnePointInner, pset=pset)
+	# toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
+	# toolbox.register("mutSubtreeReplace", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+	# toolbox.register("mutSubtreeShrink", customGP.mutShrinkToChild, pset=pset)
+	# toolbox.register("mutNodeReplace", customGP.mutNodeReplacement, pset=pset)
+	# toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
+	
+	# toolbox.register("mate", customGP.cxOnePoint)
+	# toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
+	# toolbox.register("mutSubtreeReplace", customGP.mutUniformInner, expr=toolbox.expr_mut, pset=pset)
+	# toolbox.register("mutSubtreeShrink", customGP.mutShrinkToChild, pset=pset)
+	# toolbox.register("mutNodeReplace", customGP.mutNodeReplacementInner, pset=pset)
+	# toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
+	
+	toolbox.register("mate", customGP.cxOnePointInner, pset=pset)
+	toolbox.register("expr_mut", customGP.genFull, min_=0, max_=2)
+	toolbox.register("mutSubtreeReplace", customGP.mutUniformInner, expr=toolbox.expr_mut, pset=pset)
+	toolbox.register("mutSubtreeShrink", customGP.mutShrinkToChild, pset=pset)
+	toolbox.register("mutNodeReplace", customGP.mutNodeReplacementInner, pset=pset)
+	toolbox.register("mutConstantReplace", gp.mutEphemeral, mode="one")
+	
 
 
 

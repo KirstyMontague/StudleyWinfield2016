@@ -17,5 +17,6 @@ public:
 private:
 
    CFloorEntity* m_pcFloor;
+   float m_gap;
 };
 

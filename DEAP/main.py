@@ -27,61 +27,6 @@ params = eaParams()
 customGP = customGP()
 utilities = utilities()
 
-def evaluateRobot(individual):
-	
-	# save number of robots and chromosome to file
-	with open('../chromosome.txt', 'w') as f:
-		print >> f, params.sqrtRobots	
-		print >> f, individual
-	
-	seed = 0	
-	runningFitness = 0
-	robots = {}
-	for i in range(params.iterations):
-		
-		# write seed to file
-		seed = seed + 1
-		with open('../seed.txt', 'w') as f:
-			print >> f, seed
-		
-		# run argos
-		subprocess.call(["/bin/bash", "evaluate", "", "./"])
-		
-		# result from file	
-		f = open("../result.txt", "r")
-		
-		# check each line for values that need saved
-		for line in f:
-			first = line[0:4]		
-			if (first == "food"):
-				line = line[5:]
-				robotId = int(float(line[0:line.find(' ')]))
-				line = line[line.find(' ')+1:-1]
-				robots[robotId] = line
-		
-		# measure food collected by each robot and add to cumulative total
-		thisFitness = 0.0;
-		for r in robots:
-			thisFitness += float(robots[r])
-		
-		# divide to get average for this iteration and add to running total
-		thisFitness /= params.sqrtRobots * params.sqrtRobots
-		runningFitness += thisFitness
-	
-	# divide to get average per iteration and normalise
-	fitness = runningFitness / params.iterations
-	fitness = fitness / params.maxFood
-	
-	# apply derating factor to large trees	
-	fitness *= utilities.deratingFactor(individual)
-	
-	# pause to free up CPU
-	time.sleep(params.evalSleep)
-	
-	return (fitness, )
-
-
-
 
 toolbox = base.Toolbox()
 
@@ -123,7 +68,7 @@ if experiment == "bt":
 	toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
 	toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-	toolbox.register("evaluate", evaluateRobot)
+	toolbox.register("evaluate", utilities.evaluateRobot)
 	toolbox.register("select", customGP.selTournament, tournsize=params.tournamentSize)
 
 	toolbox.register("mate", customGP.cxOnePoint)

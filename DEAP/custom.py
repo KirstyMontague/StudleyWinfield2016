@@ -100,19 +100,23 @@ class customGP():
 			print logbook.stream
 			print "-----------------------------------------------------------------------------------"
 		
-		# save each fitness score and chromosome to file
-		with open('../log.txt', 'w') as f:
-			print >> f, ""
-			print >> f, str(time.time())[0:10]
-			for ind in population:
-				print >> f, str("%.2f" % ind.fitness.values[0]) + " " + str(ind)
-			print >> f, "-----------------------------------------------------------------------------------"
+		self.utils.logFirst()
+		self.utils.logFitness(self.utils.getBest(population))
 		
 		# begin evolution
 		self.eaLoop(logbook, population, toolbox, ngen, stats, halloffame=halloffame)
 
-		# run a simulation with visualisation enabled using the best chromosome
-		self.utils.playbackBest(toolbox.select(population, len(population)))
+		# get the best individual at the end of the evolutionary run
+		best = self.utils.getBest(population)
+		
+		# log chromosome and test performance in different environments
+		self.utils.unseenCases(best)
+		self.utils.logChromosome(best)
+		
+		# save and run simulation
+		self.utils.saveOutput()
+		self.utils.playbackBest(best)
+		
 		return population, logbook
 
 
@@ -160,23 +164,12 @@ class customGP():
 				print logbook.stream
 				print "-----------------------------------------------------------------------------------"
 			
-				
-			# save each fitness score and chromosome to file
-			with open('../log.txt', 'a') as f:
-				for ind in newPop:
-					print >> f, str("%.2f" % ind.fitness.values[0]) + " " + self.utils.printTree(ind)
-				print >> f, str(gen) + " -----------------------------------------------------------------------------------"
-				
 			# print the best chromosome
 			best = self.utils.getBest(toolbox.select(population, len(population)))
+			self.utils.logFitness(best)
 			print self.utils.printTree(best)
 			
-			# every tenth generation save parameters and best chromosome to file
-			if (gen % 10 == 0):
-				self.utils.saveBest(gen, toolbox.select(population, len(population)))
-
-		# save parameters and best chromosome to file if we haven't already
-		if (gen % 10 != 0):
+			# save parameters and best chromosome to file
 			self.utils.saveBest(gen, toolbox.select(population, len(population)))
 
 
@@ -305,11 +298,6 @@ class customGP():
 		prims = [p for p in newList if p.children == node.children]
 		prim = random.choice(prims)
 		
-		# print original individual and intended mutation
-		print "----"
-		print self.utils.printTree(individual)
-		print node.name + " to " + prim.name
-		
 		# replace the selected node with one of the new type
 		expr = [(prim)]
 		if prim.arity > 0:
@@ -335,9 +323,6 @@ class customGP():
 			primSlice = slice(0, 1)
 			individual[nodeSlice] = [(prim)][primSlice]
 		
-		# print new individual
-		print self.utils.printTree(individual)
-
 		return individual,
 
 	def mutShrinkToChild(self, individual, pset):

@@ -65,6 +65,11 @@ void CFootBotSW2016::createBlackBoard(int numRobots)
 	m_blackBoard = new CBlackBoard(numRobots);
 }
 
+void CFootBotSW2016::setParams(float gap)
+{
+	m_params = gap;
+}
+
 void CFootBotSW2016::sensing() 
 {
 	bool tracking = inTrackingIDs() && m_verbose;
@@ -83,7 +88,7 @@ void CFootBotSW2016::sensing()
 	double r = sqrt((x * x) + (y * y));
 	
 	// update the blackboard to reflect whether the robot is in the food region
-	m_blackBoard->setDetectedFood(r >= 1);
+	m_blackBoard->setDetectedFood(r >= .5 + m_params);
 	
 	// update the blackboard to reflect whether the robot is in the nest region
 	if (r < .5 && m_blackBoard->getCarryingFood())
@@ -93,7 +98,7 @@ void CFootBotSW2016::sensing()
 		m_pcLEDs->SetAllColors(CColor::BLACK);
 	}
 	
-	if (r >= 1)
+	if (r >= .5 + m_params)
 	{
 		m_pcLEDs->SetAllColors(CColor::GREEN);
 	}
@@ -101,7 +106,7 @@ void CFootBotSW2016::sensing()
 	// map for density of robots and defaults for distance to food or nest
 	std::map<int, double> IDs;
 	float nestRange = (r < .5) ? 0 : 500;
-	float foodRange = (r < 1) ? 500 : 0;
+	float foodRange = (r < .5 + m_params) ? 500 : 0;
 	
 	// for each range and bearing signal received 
 	for(size_t i = 0; i < tPackets.size(); ++i) {

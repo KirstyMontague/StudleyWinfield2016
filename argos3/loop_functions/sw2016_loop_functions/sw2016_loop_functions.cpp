@@ -24,14 +24,18 @@ void CSW2016LoopFunctions::Init(TConfigurationNode& t_tree)
                      
 	CRandom::CRNG* pcRNG = CRandom::CreateRNG("argos");;
 	
-	// get random seed from file	
-   std::ifstream seedFile("../seed.txt");
-	std::string seed;
-	while( getline(seedFile, seed) )
+	// get random seed and environmental parameters from file
+	std::ifstream seedFile("../seed.txt");;
+	std::string line = "";
+	int seed = -1;
+	while( getline(seedFile, line) )
 	{
-		pcRNG->SetSeed(std::stoi(seed));
-		pcRNG->Reset();
+		(seed == -1)
+			? seed = std::stoi(line)
+			: m_gap = std::stof(line);
 	}
+	pcRNG->SetSeed(seed);
+	pcRNG->Reset();
 		
 	// get the filename for chromosome (best/chromosome)
 	std::string filename;
@@ -46,8 +50,7 @@ void CSW2016LoopFunctions::Init(TConfigurationNode& t_tree)
    std::ifstream chromosomeFile("../"+filename);   
    
 	int sqrtRobots = 0;
-	std::string chromosome;	
-	std::string line;
+	std::string chromosome;
    while( getline(chromosomeFile, line) )
 	{
 		// number of robots
@@ -95,10 +98,12 @@ void CSW2016LoopFunctions::Init(TConfigurationNode& t_tree)
 			double x = ((double) i - floor(sqrtRobots / 2)) / 4;
 			double y = ((double) j - floor(sqrtRobots / 2)) / 4;
 			cFBPos.Set(x, y, 0.0f);	
+			//cFBPos.Set(-1.0f,0.0f,0.0f); --- uncomment to hard code robot position
 			
 			// rotation
 			auto r = pcRNG->Uniform(CRadians::UNSIGNED_RANGE);
 			cFBRot.FromAngleAxis(r, CVector3::Z);
+			// cFBRot.FromAngleAxis(CRadians(), CVector3::Z); --- uncomment to hard code robot orientation
 			
 			// place robot
 			MoveEntity(pcFB->GetEmbodiedEntity(), cFBPos, cFBRot);	
@@ -107,6 +112,7 @@ void CSW2016LoopFunctions::Init(TConfigurationNode& t_tree)
 			CFootBotSW2016& controller = dynamic_cast<CFootBotSW2016&>(pcFB->GetControllableEntity().GetController());
 			controller.buildTree(tokens);
 			controller.createBlackBoard(sqrtRobots * sqrtRobots);
+			controller.setParams(m_gap);
 		}
 	}
 
@@ -128,7 +134,7 @@ CColor CSW2016LoopFunctions::GetFloorColor(const CVector2& c_position_on_plane)
    {
 		return CColor::GRAY50; // nest
    }
-   else if (r < 1.0f)
+   else if (r < 0.5f + m_gap)
    {
 		return CColor::WHITE; // gap
 	}

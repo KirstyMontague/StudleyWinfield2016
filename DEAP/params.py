@@ -4,31 +4,37 @@ import random
 
 class eaParams():
 	
-	deapSeed = 15;
-	sqrtRobots = 3;
-	iterations = 2;
-	populationSize = 25;
-	tournamentSize = 3;
-	eliteSize = 3;
-	generations = 10;
-	maxFood = 8;
+	deapSeed = 5
+	sqrtRobots = 3
+	populationSize = 25
+	tournamentSize = 3
+	eliteSize = 3
+	generations = 50
+	maxFood = 8
 
-	crossoverProbability = 0.8;
-	mutSRProbability = 0.05; 		# mutUniform
-	mutSSProbability = 0.1;  		# mutShrink
-	mutNRProbability = 0.5;  		# mutNodeReplacement
-	mutECRProbability = 0.5; 		# mutEphemeral
+	iterations = 2
+	arenaParams = [.4,.8]
+	unseenIterations = 2
+	unseenParams = [.3,.4,.5,.6,.7,.8,.9,1]
+
+	crossoverProbability = .8
+	mutSRProbability = 0.05 		# mutUniform
+	mutSSProbability = 0.1  		# mutShrink
+	mutNRProbability = 0.5  		# mutNodeReplacement
+	mutECRProbability = 0.5 		# mutEphemeral
 	
 	genSleep = 10
 	evalSleep = 5
+	trialSleep = 0
 	
 	nodes = {}
 	
 	def __init__(self):
 		self.genSleep = self.populationSize / 2
 		self.evalSleep = (self.sqrtRobots * self.sqrtRobots * self.iterations) / 9
-		# self.genSleep = 0
-		# self.evalSleep = 0
+		self.trialSleep = .5
+		print self.genSleep
+		print self.evalSleep
 		self.nodes = {
 			"selm2" : True,
 			"selm3" : True,

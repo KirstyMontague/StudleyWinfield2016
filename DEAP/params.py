@@ -10,19 +10,24 @@ class eaParams():
 	tournamentSize = 3
 	eliteSize = 3
 	generations = 50
-	maxFood = 8
-
-	iterations = 2
-	arenaParams = [.4,.8]
-	unseenIterations = 2
-	unseenParams = [.3,.4,.5,.6,.7,.8,.9,1]
 
 	crossoverProbability = .8
 	mutSRProbability = 0.05 		# mutUniform
 	mutSSProbability = 0.1  		# mutShrink
 	mutNRProbability = 0.5  		# mutNodeReplacement
 	mutECRProbability = 0.5 		# mutEphemeral
-	
+
+	# evaluation parameters for evolving and testing
+	iterations = 2
+	arenaParams = [.3, .9]
+	unseenIterations = 2
+	unseenParams = [.3, .4, .5, .6, .7, .8, .9, 1.0]
+
+	# timesteps required to turn and move, and total timesteps available
+	turn180 = 72
+	forwards1m = 160
+	totalSteps = 2400
+
 	genSleep = 10
 	evalSleep = 5
 	trialSleep = 0

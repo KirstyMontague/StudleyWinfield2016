@@ -1,6 +1,7 @@
 
 import time
 import os
+import math
 import subprocess
 from params import eaParams
 
@@ -29,7 +30,6 @@ class utilities():
 			with open('../seed.txt', 'w') as f:
 				print >> f, counter + 1
 				print >> f, self.params.arenaParams[counter]
-			counter += 1
 			
 			# run argos
 			subprocess.call(["/bin/bash", "evaluate", "", "./"])
@@ -51,18 +51,21 @@ class utilities():
 			for r in robots:
 				thisFitness += float(robots[r])
 			
-			# divide to get average for this iteration and add to running total
+			# get maximum food available with the current gap between the nest and food
+			maxFood = self.calculateMaxFood(self.params.arenaParams[counter])
+			
+			# divide to get average for this iteration, normalise and add to running total
 			thisFitness /= self.params.sqrtRobots * self.params.sqrtRobots
+			thisFitness /= maxFood
 			runningFitness += thisFitness
 			
-			# pause to free up CPU
+			# increment counter and pause to free up CPU
+			counter += 1
 			time.sleep(self.params.trialSleep)
-			
-		# divide to get average per iteration and normalise
-		fitness = runningFitness / self.params.iterations
-		fitness = fitness / self.params.maxFood
 		
-		# apply derating factor to large trees
+		# divide to get average per iteration and apply derating factor
+		fitness = runningFitness / self.params.iterations
+		beforeDerated = fitness
 		fitness *= self.deratingFactor(individual)
 
 		# pause to free up CPU
@@ -70,6 +73,17 @@ class utilities():
 		
 		return (fitness, )
 
+	def calculateMaxFood(self, gap):
+		
+		turn180 = self.params.turn180
+		forwards1m = self.params.forwards1m
+		totalSteps = self.params.totalSteps
+		
+		journey = forwards1m * gap + 1
+		firstTrip = journey * 2 + turn180
+		otherTrips = journey * 2 + turn180 * 2
+		
+		return math.floor((totalSteps - firstTrip) / otherTrips) + 1
 
 	def getBest(self, population):	
 		

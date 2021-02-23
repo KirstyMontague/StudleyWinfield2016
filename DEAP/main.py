@@ -45,7 +45,7 @@ if experiment == "original":
 	toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr_init)
 	toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-	toolbox.register("evaluate", evaluateRobot)
+	toolbox.register("evaluate", utilities.evaluateRobot)
 	toolbox.register("select", customGP.selTournament, tournsize=params.tournamentSize)
 
 	toolbox.register("mate", gp.cxOnePoint)
@@ -104,27 +104,45 @@ if experiment == "weighted":
 
 
 
-
+skip = False
 
 def main():
-	random.seed(params.deapSeed)
-
-	pop = toolbox.population(n=params.populationSize)
-	hof = tools.HallOfFame(1)
 	
-	stats_fit = tools.Statistics(key=lambda ind: ind.fitness.values[0])
-	stats_size = tools.Statistics(key=lambda depth: depth.height)
-	mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
+	if skip == False:
+		random.seed(params.deapSeed)
 
-	stats = tools.Statistics(lambda ind: ind.fitness.values)
-	mstats.register("avg", numpy.mean)
-	mstats.register("std", numpy.std)
-	mstats.register("min", numpy.min)
-	mstats.register("max", numpy.max)
+		pop = toolbox.population(n=params.populationSize)
+		hof = tools.HallOfFame(1)
+		
+		stats_fit = tools.Statistics(key=lambda ind: ind.fitness.values[0])
+		stats_size = tools.Statistics(key=lambda depth: depth.height)
+		mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
 
-	customGP.eaInit(pop, toolbox, params.generations, mstats, halloffame=hof)
-    
-	return pop, hof, mstats
+		stats = tools.Statistics(lambda ind: ind.fitness.values)
+		mstats.register("avg", numpy.mean)
+		mstats.register("std", numpy.std)
+		mstats.register("min", numpy.min)
+		mstats.register("max", numpy.max)
+
+		customGP.eaInit(pop, toolbox, params.generations, mstats, halloffame=hof)
+		 
+		return pop, hof, mstats
+	
+	else:
+		
+		primitivetree = gp.PrimitiveTree([])
+		
+		# get best from file
+		f = open("../best.txt", "r")
+		for line in f:
+			best = line
+		
+		best = primitivetree.from_string(best, pset)
+		utilities.unseenSeeds(best)
+		utilities.logChromosome(best)
+		utilities.saveOutput()
+		utilities.playbackBest(best)
+		
 
 if __name__ == "__main__":
 	main()

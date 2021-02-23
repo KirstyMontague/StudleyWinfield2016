@@ -384,8 +384,15 @@ class customGP():
 			return ind1, ind2
 
 		type_ = ind1.root.ret
-		index1 = random.choice([i for i, node in enumerate(ind1[1:], 1) if node.ret == type_])
-		index2 = random.choice([i for i, node in enumerate(ind2[1:], 1) if node.ret == type_])
+		
+		selection1 = [i for i, node in enumerate(ind1[1:], 1) if node.ret == type_]
+		selection2 = [i for i, node in enumerate(ind2[1:], 1) if node.ret == type_]
+		
+		if len(selection1) == 0 or len(selection2) == 0:
+			return ind1, ind2
+		
+		index1 = random.choice(selection1)
+		index2 = random.choice(selection2)
 
 		slice1 = ind1.searchSubtree(index1)
 		slice2 = ind2.searchSubtree(index2)

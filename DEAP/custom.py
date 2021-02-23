@@ -110,7 +110,7 @@ class customGP():
 		best = self.utils.getBest(population)
 		
 		# log chromosome and test performance in different environments
-		self.utils.unseenCases(best)
+		self.utils.unseenSeeds(best)
 		self.utils.logChromosome(best)
 		
 		# save and run simulation
@@ -118,7 +118,6 @@ class customGP():
 		self.utils.playbackBest(best)
 		
 		return population, logbook
-
 
 	def eaLoop(self, logbook, population, toolbox, ngen, stats=None, halloffame=None, verbose=__debug__):
 
@@ -168,9 +167,6 @@ class customGP():
 			best = self.utils.getBest(toolbox.select(population, len(population)))
 			self.utils.logFitness(best)
 			print self.utils.printTree(best)
-			
-			# save parameters and best chromosome to file
-			self.utils.saveBest(gen, toolbox.select(population, len(population)))
 
 
 	def genFull(self, pset, min_, max_, type_=None):

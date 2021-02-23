@@ -21,50 +21,123 @@ class utilities():
 			print >> f, self.params.sqrtRobots
 			print >> f, individual
 		
-		counter = 0
 		runningFitness = 0
 		robots = {}
-		for i in range(self.params.iterations):
-			
-			# write seed to file
-			with open('../seed.txt', 'w') as f:
-				print >> f, counter + 1
-				print >> f, self.params.arenaParams[counter]
-			
-			# run argos
-			subprocess.call(["/bin/bash", "evaluate", "", "./"])
-			
-			# result from file
-			f = open("../result.txt", "r")
-			
-			# check each line for values that need saved
-			for line in f:
-				first = line[0:4]
-				if (first == "food"):
-					line = line[5:]
-					robotId = int(float(line[0:line.find(' ')]))
-					line = line[line.find(' ')+1:-1]
-					robots[robotId] = line
-			
-			# measure food collected by each robot and add to cumulative total
-			thisFitness = 0.0;
-			for r in robots:
-				thisFitness += float(robots[r])
+		seed = 0
+		for i in self.params.arenaParams:
 			
 			# get maximum food available with the current gap between the nest and food
-			maxFood = self.calculateMaxFood(self.params.arenaParams[counter])
+			maxFood = self.calculateMaxFood(i)
 			
-			# divide to get average for this iteration, normalise and add to running total
-			thisFitness /= self.params.sqrtRobots * self.params.sqrtRobots
-			thisFitness /= maxFood
-			runningFitness += thisFitness
-			
-			# increment counter and pause to free up CPU
-			counter += 1
-			time.sleep(self.params.trialSleep)
+			for j in range(self.params.iterations):
+				
+				# write seed to file
+				seed += 1
+				with open('../seed.txt', 'w') as f:
+					print >> f, seed
+					print >> f, i
+
+				# run argos
+				subprocess.call(["/bin/bash", "evaluate", "", "./"])
+				
+				# result from file
+				f = open("../result.txt", "r")
+				
+				# check each line for values that need saved
+				for line in f:
+					first = line[0:4]
+					if (first == "food"):
+						line = line[5:]
+						robotId = int(float(line[0:line.find(' ')]))
+						line = line[line.find(' ')+1:-1]
+						robots[robotId] = line
+				
+				# measure food collected by each robot and add to cumulative total
+				thisFitness = 0.0;
+				for r in robots:
+					thisFitness += float(robots[r])
+				
+				# divide to get average for this iteration, normalise and add to running total
+				thisFitness /= self.params.sqrtRobots * self.params.sqrtRobots
+				thisFitness /= maxFood
+				runningFitness += thisFitness
+				
+				# increment counter and pause to free up CPU
+				time.sleep(self.params.trialSleep)
 		
-		# divide to get average per iteration and apply derating factor
+		# divide to get average per seed
 		fitness = runningFitness / self.params.iterations
+
+		# divide to get average per arena configuration and apply derating factor
+		fitness = fitness / len(self.params.arenaParams)
+		beforeDerated = fitness
+		fitness *= self.deratingFactor(individual)
+
+		# pause to free up CPU
+		time.sleep(self.params.evalSleep)
+		
+		return (fitness, )
+
+	def evaluateSeeds(self, individual):
+		
+		# save number of robots and chromosome to file
+		with open('../chromosome.txt', 'w') as f:
+			print >> f, self.params.sqrtRobots
+			print >> f, individual
+		
+		runningFitness = 0
+		robots = {}
+		seed = 10
+		for i in self.params.arenaParams:
+			
+			# get maximum food available with the current gap between the nest and food
+			maxFood = self.calculateMaxFood(i)
+			
+			for j in range(self.params.iterations):
+				
+				# write seed to file
+				seed += 1
+				with open('../seed.txt', 'w') as f:
+					print >> f, seed
+					print >> f, i
+
+				# run argos
+				subprocess.call(["/bin/bash", "evaluate", "", "./"])
+				
+				# result from file
+				f = open("../result.txt", "r")
+				
+				# check each line for values that need saved
+				for line in f:
+					first = line[0:4]
+					if (first == "food"):
+						line = line[5:]
+						robotId = int(float(line[0:line.find(' ')]))
+						line = line[line.find(' ')+1:-1]
+						robots[robotId] = line
+				
+				# measure food collected by each robot and add to cumulative total
+				thisFitness = 0.0;
+				for r in robots:
+					thisFitness += float(robots[r])
+				
+				# divide to get average for this iteration, normalise and add to running total
+				thisFitness /= self.params.sqrtRobots * self.params.sqrtRobots
+				
+				thisFitness /= maxFood
+				
+				self.output += str("%.4f" % thisFitness)+","
+				
+				runningFitness += thisFitness
+				
+				# increment counter and pause to free up CPU
+				time.sleep(self.params.trialSleep)
+		
+		# divide to get average per seed
+		fitness = runningFitness / self.params.iterations
+
+		# divide to get average per arena configuration and apply derating factor
+		fitness = fitness / len(self.params.arenaParams)
 		beforeDerated = fitness
 		fitness *= self.deratingFactor(individual)
 
@@ -142,17 +215,26 @@ class utilities():
 
 	def logFitness(self, best):
 		# save the best fitness to the output
-		self.output += str("%.4f" % best.fitness.values[0])+", "
+		self.output += str("%.4f" % best.fitness.values[0])+","
 
 	def unseenCases(self, best):
+		self.output += ","
 		self.params.iterations = self.params.unseenIterations
 		for param in self.params.unseenParams:
 			self.params.arenaParams = [param, param]
 			fitness = self.evaluateRobot(best)
 			self.output += str("%.4f" % fitness)+","
 			print fitness
+			time.sleep(self.params.evalSleep)
 		
 		self.output += ","
+		
+	def unseenSeeds(self, best):
+		self.output += ","
+		self.params.iterations = self.params.unseenIterations
+		fitness = self.evaluateSeeds(best)
+		self.output += ","+str("%.4f" % fitness)+",,"
+		print fitness
 
 	def logChromosome(self, best):
 		# save the best member of the population to the log
@@ -160,6 +242,9 @@ class utilities():
 	
 	def saveOutput(self):
 		logHeaders = "Time,Seed,Robots,Population Size,Tournament Size,Elites,Iterations,Arena Params,Unseen Iterations,Unseen Params,Nodes,"
+		logHeaders += "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,"
+		logHeaders += "argos seeds:,11,12,13,14,15,16,17,18,19,20,,Average Unseen,,Chromosome"
+		
 		print self.output
 		with open('../es.csv', 'a') as f:
 			# print >> f, logHeaders

@@ -26,11 +26,11 @@ class CBlackBoard
 		int getMotors() {return m_motors;}
 		void setMotors(int motors) {m_motors = motors;}
 		
-		int getScratchpad() {return m_scratchpad;}
-		void setScratchpad(int scratchpad) {m_scratchpad = scratchpad;}
+		float getScratchpad() {return m_scratchpad;}
+		void setScratchpad(float scratchpad) {m_scratchpad = scratchpad;}
 		
-		int getSendSignal() {return m_sendSignal;}
-		void setSendSignal(int signal) {m_sendSignal = signal;}
+		float getSendSignal() {return m_sendSignal;}
+		void setSendSignal(float signal) {m_sendSignal = signal;}
 		
 		bool getReceivedSignal() {return m_receivedSignal;}
 		void setReceivedSignal(bool received) {m_receivedSignal = received;}
@@ -60,9 +60,9 @@ class CBlackBoard
 	
 		int m_motors;
 		
-		int m_scratchpad;
+		float m_scratchpad;
 		
-		int m_sendSignal;
+		float m_sendSignal;
 		
 		bool m_receivedSignal;
 		

@@ -494,12 +494,12 @@ std::string CNode::evaluate(CBlackBoard* blackBoard, std::string& output)
 
 float CNode::normaliseBlackBoardValue(CBlackBoard* blackBoard, int index)
 {
-	if (index == 1) { // values between -100 and 100
-		return blackBoard->getScratchpad() / 100;
+	if (index == 1) { // values between -1 and 1
+		return blackBoard->getScratchpad();
 	}
 	
-	if (index == 2) { // values between -100 and 100
-		return blackBoard->getSendSignal() / 100;
+	if (index == 2) { // values between -1 and 1
+		return blackBoard->getSendSignal();
 	}
 	
 	if (index == 3) { // boolean

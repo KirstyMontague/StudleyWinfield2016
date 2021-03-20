@@ -173,7 +173,7 @@ class utilities():
 			elif (thisFitness > bestFitness):
 				currentBest = True
 			
-			elif (thisFitness == bestFitness and individual.height > 3 and individual.height < bestHeight):
+			elif (thisFitness == bestFitness and bestHeight > 3 and individual.height < bestHeight):
 				currentBest = True
 				
 			if (currentBest):

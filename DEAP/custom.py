@@ -164,7 +164,7 @@ class customGP():
 				print "-----------------------------------------------------------------------------------"
 			
 			# print the best chromosome
-			best = self.utils.getBest(toolbox.select(population, len(population)))
+			best = self.utils.getBest(population)
 			self.utils.logFitness(best)
 			print self.utils.printTree(best)
 
